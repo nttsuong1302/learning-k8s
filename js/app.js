@@ -235,10 +235,10 @@
     if (e.target === overlay) close();
   });
 
-  // Double-clic sur un objet de la scène principale -> on "entre"
-  document.addEventListener("dblclick", (e) => {
-    const dbl = e.target.closest("[data-dblslide]");
-    if (dbl) { open(dbl.getAttribute("data-dblslide")); }
+  // Clic droit sur un objet de la scène principale -> on "entre"
+  document.addEventListener("contextmenu", (e) => {
+    const rc = e.target.closest("[data-rightslide]");
+    if (rc) { e.preventDefault(); open(rc.getAttribute("data-rightslide")); }
   });
 
   document.addEventListener("keydown", (e) => {

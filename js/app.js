@@ -135,8 +135,9 @@
       ? `<span class="footer-src"><span class="src-label">Source :</span>
            <a href="${esc(data.source)}" target="_blank" rel="noopener">${esc(data.sourceLabel || data.source)} ↗</a></span>`
       : `<span></span>`;
-    const nav = (data.nav || []).map((n) =>
-      `<button class="nav-btn" data-go="${esc(n.slide)}">${esc(n.label)}</button>`).join("");
+    const nav = (data.nav || []).map((n) => n.scene
+      ? `<button class="nav-btn" data-scene="${esc(n.scene)}">${esc(n.label)}</button>`
+      : `<button class="nav-btn" data-go="${esc(n.slide)}">${esc(n.label)}</button>`).join("");
     return `<div class="slide-footer scene-footer">${src}<span class="footer-nav">${nav}</span></div>`;
   }
 
@@ -223,10 +224,25 @@
 
   function close() { overlay.classList.remove("open"); current = null; }
 
+  // Changement de scène plein écran (extérieur <-> intérieur)
+  function showScene(name) {
+    document.querySelectorAll(".scene-view").forEach((v) =>
+      v.classList.toggle("active", v.id === "view-" + name));
+    const hint = document.getElementById("stage-hint");
+    if (hint) {
+      hint.textContent = name === "interior"
+        ? "Clique le paillasson ou le meuble à chaussures pour ouvrir sa fiche"
+        : "Clique sur la porte pour ouvrir sa fiche";
+    }
+  }
+
   // ---------- Interactions ----------
   document.addEventListener("click", (e) => {
     const hot = e.target.closest(".hotspot[data-slide]");
     if (hot) { open(hot.getAttribute("data-slide")); return; }
+
+    const sc = e.target.closest("[data-scene]");
+    if (sc) { close(); showScene(sc.getAttribute("data-scene")); return; }
 
     const go = e.target.closest("[data-go]");
     if (go) { open(go.getAttribute("data-go")); return; }

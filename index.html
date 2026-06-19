@@ -11,10 +11,12 @@
   <header class="topbar">
     <h1>学 · La Maison Mémorielle</h1>
     <span class="floor-tag">RDC — CloudNativePG</span>
-    <span class="hint">Clique sur un objet lumineux pour ouvrir sa fiche</span>
+    <span class="hint" id="stage-hint">Clique sur la porte pour ouvrir sa fiche</span>
   </header>
 
   <main class="scene" aria-label="Maison japonaise interactive">
+   <!-- ============ SCÈNE 1 : extérieur de la maison ============ -->
+   <div class="scene-view active" id="view-exterior">
     <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg" role="img"
          aria-label="Scène d'une maison japonaise au crépuscule">
 
@@ -117,6 +119,87 @@
       <text x="600" y="690" text-anchor="middle" font-size="15" fill="var(--paper)"
             opacity="0.9" font-family="serif">La Porte → CloudNativePG</text>
     </svg>
+   </div>
+
+   <!-- ============ SCÈNE 2 : intérieur, le couloir / genkan ============ -->
+   <div class="scene-view" id="view-interior">
+    <button class="exit-btn" data-scene="exterior" aria-label="Sortir de la maison">← Sortir de la maison</button>
+    <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg" role="img"
+         aria-label="Couloir japonais intérieur, avec paillasson et meuble à chaussures">
+
+      <!-- ambiance + perspective à 1 point (point de fuite ~ 600,380) -->
+      <rect x="0" y="0" width="1200" height="800" fill="#e9dcc6"/>
+      <polygon points="0,90 520,300 680,300 1200,90" fill="var(--roof)"/>
+      <polygon points="0,90 520,300 520,480 0,800" fill="#efe3cd"/>
+      <polygon points="1200,90 680,300 680,480 1200,800" fill="#f6ecd8"/>
+      <polygon points="0,800 520,480 680,480 1200,800" fill="var(--wood)"/>
+
+      <!-- porte shoji du fond (éclairée) -->
+      <rect x="520" y="300" width="160" height="180" fill="#fff6e2"/>
+      <rect x="520" y="300" width="160" height="180" fill="none" stroke="var(--wood-dark)" stroke-width="3"/>
+      <line x1="600" y1="300" x2="600" y2="480" stroke="var(--wood)" stroke-width="2"/>
+      <line x1="520" y1="360" x2="680" y2="360" stroke="var(--wood)" stroke-width="1.5"/>
+      <line x1="520" y1="420" x2="680" y2="420" stroke="var(--wood)" stroke-width="1.5"/>
+
+      <!-- montants shoji (perspective) -->
+      <g stroke="var(--wood)" stroke-width="2" opacity="0.5">
+        <line x1="130" y1="158" x2="130" y2="720"/>
+        <line x1="260" y1="208" x2="260" y2="640"/>
+        <line x1="390" y1="255" x2="390" y2="560"/>
+        <line x1="0" y1="455" x2="520" y2="392"/>
+        <line x1="1070" y1="158" x2="1070" y2="720"/>
+        <line x1="940" y1="208" x2="940" y2="640"/>
+        <line x1="810" y1="255" x2="810" y2="560"/>
+        <line x1="1200" y1="455" x2="680" y2="392"/>
+      </g>
+      <!-- planches du sol (vers le point de fuite) -->
+      <g stroke="var(--wood-dark)" stroke-width="2" opacity="0.45">
+        <line x1="120" y1="800" x2="540" y2="480"/>
+        <line x1="360" y1="800" x2="575" y2="480"/>
+        <line x1="840" y1="800" x2="625" y2="480"/>
+        <line x1="1080" y1="800" x2="660" y2="480"/>
+      </g>
+      <!-- poutres du plafond -->
+      <g stroke="#2e2620" stroke-width="3" opacity="0.35">
+        <line x1="300" y1="90" x2="545" y2="300"/>
+        <line x1="600" y1="78" x2="600" y2="300"/>
+        <line x1="900" y1="90" x2="655" y2="300"/>
+      </g>
+
+      <!-- lanterne suspendue -->
+      <line x1="600" y1="90" x2="600" y2="150" stroke="var(--wood-dark)" stroke-width="2"/>
+      <ellipse cx="600" cy="180" rx="26" ry="34" fill="var(--lantern)"/>
+      <ellipse cx="600" cy="180" rx="26" ry="34" fill="var(--lantern-glow)" opacity="0.35"/>
+      <circle cx="600" cy="180" r="48" fill="var(--lantern-glow)" opacity="0.12"/>
+
+      <!-- ===== OBJET : le getabako (meuble à chaussures) ===== -->
+      <g class="hotspot" data-slide="entree" tabindex="0" role="button"
+         aria-label="Le meuble à chaussures (getabako) : Avant de commencer">
+        <rect class="glow-target" x="855" y="430" width="210" height="300" rx="4"
+              fill="var(--wood)" stroke="var(--wood-dark)" stroke-width="4"/>
+        <line x1="855" y1="520" x2="1065" y2="520" stroke="var(--wood-dark)" stroke-width="3"/>
+        <line x1="855" y1="620" x2="1065" y2="620" stroke="var(--wood-dark)" stroke-width="3"/>
+        <line x1="960" y1="430" x2="960" y2="730" stroke="var(--wood-dark)" stroke-width="2"/>
+        <g fill="var(--roof-light)"><ellipse cx="905" cy="500" rx="20" ry="9"/><ellipse cx="1015" cy="500" rx="20" ry="9"/></g>
+        <g fill="var(--wood-dark)"><ellipse cx="905" cy="600" rx="20" ry="9"/><ellipse cx="1015" cy="600" rx="20" ry="9"/></g>
+        <g fill="#8d8270"><ellipse cx="905" cy="700" rx="20" ry="9"/><ellipse cx="1015" cy="700" rx="20" ry="9"/></g>
+        <circle class="pulse" cx="960" cy="410" r="11" fill="var(--lantern-glow)"/>
+      </g>
+      <text x="960" y="758" text-anchor="middle" font-size="15" fill="var(--ink)" font-family="serif">Le meuble à chaussures (getabako)</text>
+
+      <!-- ===== OBJET : le paillasson ===== -->
+      <g class="hotspot" data-slide="entree" tabindex="0" role="button"
+         aria-label="Le paillasson : Avant de commencer">
+        <polygon class="glow-target" points="360,690 720,690 770,775 310,775" fill="var(--accent)"/>
+        <polygon points="372,700 708,700 752,766 328,766" fill="none" stroke="var(--paper)" stroke-width="2" opacity="0.7"/>
+        <text x="540" y="746" text-anchor="middle" font-size="30" fill="var(--paper)" font-family="serif">ようこそ</text>
+        <circle class="pulse" cx="540" cy="675" r="11" fill="var(--lantern-glow)"/>
+      </g>
+      <text x="540" y="795" text-anchor="middle" font-size="15" fill="var(--paper)" opacity="0.9" font-family="serif">Le paillasson → Avant de commencer</text>
+
+      <text x="600" y="520" text-anchor="middle" font-size="13" fill="var(--ink)" opacity="0.45" font-family="serif">… le couloir continue (étages à venir)</text>
+    </svg>
+   </div>
   </main>
 
   <!-- Overlay de la slide -->

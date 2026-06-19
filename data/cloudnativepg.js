@@ -24,7 +24,7 @@ window.SLIDES["porte"] = {
   sourceLabel: "cloudnative-pg.io/docs/1.29",
   scene: "porte",
   hint: "Clique un objet de la porte → sa rubrique s'ouvre à droite.",
-  nav: [{ slide: "entree", label: "Entrer dans le genkan (l'entrée) →" }],
+  nav: [{ scene: "interior", label: "Entrer dans la maison →" }],
   objects: [
     {
       id: "presentation",
@@ -99,7 +99,7 @@ window.SLIDES["entree"] = {
   sourceLabel: "cloudnative-pg.io/docs/1.29/before_you_start",
   scene: "entree",
   hint: "On enlève ses chaussures (les termes) au getabako avant d'avancer.",
-  nav: [{ slide: "porte", label: "← Revenir à la porte" }],
+  nav: [],
   objects: [
     {
       id: "tapis",

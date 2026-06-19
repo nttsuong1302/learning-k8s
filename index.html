@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Learning K8s · La Maison Mémorielle</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <header class="topbar">
+    <h1>学 · La Maison Mémorielle</h1>
+    <span class="floor-tag">RDC — CloudNativePG</span>
+    <span class="hint">Clique sur un objet lumineux pour ouvrir sa fiche</span>
+  </header>
+
+  <main class="scene" aria-label="Maison japonaise interactive">
+    <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg" role="img"
+         aria-label="Scène d'une maison japonaise au crépuscule">
+
+      <!-- ===== Décor de fond ===== -->
+      <!-- Lune -->
+      <circle cx="980" cy="150" r="70" fill="#fff3da" opacity="0.85"/>
+      <circle cx="980" cy="150" r="92" fill="#fff3da" opacity="0.18"/>
+
+      <!-- Collines lointaines -->
+      <path d="M0 560 Q 250 470 500 540 T 1200 520 L1200 800 L0 800 Z" fill="#7a6385" opacity="0.55"/>
+      <path d="M0 600 Q 300 520 650 590 T 1200 575 L1200 800 L0 800 Z" fill="#5d4c6e" opacity="0.6"/>
+
+      <!-- Sol / jardin -->
+      <rect x="0" y="650" width="1200" height="150" fill="#3c4a3a"/>
+      <path d="M0 650 Q 600 620 1200 650 L1200 690 L0 690 Z" fill="#46563f"/>
+
+      <!-- Sentier vers la porte -->
+      <path d="M540 800 L560 660 L640 660 L660 800 Z" fill="#9c8f76" opacity="0.85"/>
+      <line x1="555" y1="700" x2="645" y2="700" stroke="#7d7160" stroke-width="3"/>
+      <line x1="552" y1="740" x2="648" y2="740" stroke="#7d7160" stroke-width="3"/>
+      <line x1="549" y1="780" x2="651" y2="780" stroke="#7d7160" stroke-width="3"/>
+
+      <!-- ===== Corps de la maison ===== -->
+      <!-- Étage 2 (CKA - futur) : volume supérieur -->
+      <rect x="360" y="370" width="480" height="120" fill="var(--paper)" stroke="var(--wood-dark)" stroke-width="3"/>
+      <g stroke="var(--wood)" stroke-width="2.5">
+        <line x1="440" y1="370" x2="440" y2="490"/>
+        <line x1="520" y1="370" x2="520" y2="490"/>
+        <line x1="600" y1="370" x2="600" y2="490"/>
+        <line x1="680" y1="370" x2="680" y2="490"/>
+        <line x1="760" y1="370" x2="760" y2="490"/>
+        <line x1="360" y1="430" x2="840" y2="430"/>
+      </g>
+
+      <!-- Toit supérieur -->
+      <path d="M330 375 L600 270 L870 375 Z" fill="var(--roof)"/>
+      <path d="M330 375 L600 270 L600 290 L350 388 Z" fill="var(--roof-light)" opacity="0.6"/>
+      <path d="M312 388 Q 600 300 888 388 L870 405 Q 600 322 330 405 Z" fill="var(--roof)"/>
+
+      <!-- Étage 1 (Infrastructure - futur) : volume principal -->
+      <rect x="300" y="490" width="600" height="170" fill="var(--paper)" stroke="var(--wood-dark)" stroke-width="3"/>
+
+      <!-- Panneaux shoji gauche -->
+      <g stroke="var(--wood)" stroke-width="2.5" fill="none">
+        <rect x="320" y="510" width="150" height="130"/>
+        <line x1="320" y1="575" x2="470" y2="575"/>
+        <line x1="395" y1="510" x2="395" y2="640"/>
+      </g>
+      <!-- Panneaux shoji droite -->
+      <g stroke="var(--wood)" stroke-width="2.5" fill="none">
+        <rect x="730" y="510" width="150" height="130"/>
+        <line x1="730" y1="575" x2="880" y2="575"/>
+        <line x1="805" y1="510" x2="805" y2="640"/>
+      </g>
+
+      <!-- Toit principal (large, avant-toit) -->
+      <path d="M270 495 L600 410 L930 495 Z" fill="var(--roof)"/>
+      <path d="M250 510 Q 600 440 950 510 L930 532 Q 600 462 270 532 Z" fill="var(--roof)"/>
+      <path d="M270 495 L600 410 L600 430 L290 510 Z" fill="var(--roof-light)" opacity="0.55"/>
+
+      <!-- Lanternes -->
+      <g>
+        <line x1="360" y1="495" x2="360" y2="525" stroke="var(--wood-dark)" stroke-width="2"/>
+        <ellipse cx="360" cy="548" rx="20" ry="26" fill="var(--lantern)"/>
+        <ellipse cx="360" cy="548" rx="20" ry="26" fill="var(--lantern-glow)" opacity="0.35"/>
+        <circle cx="360" cy="548" r="34" fill="var(--lantern-glow)" opacity="0.18"/>
+      </g>
+      <g>
+        <line x1="840" y1="495" x2="840" y2="525" stroke="var(--wood-dark)" stroke-width="2"/>
+        <ellipse cx="840" cy="548" rx="20" ry="26" fill="var(--lantern)"/>
+        <ellipse cx="840" cy="548" rx="20" ry="26" fill="var(--lantern-glow)" opacity="0.35"/>
+        <circle cx="840" cy="548" r="34" fill="var(--lantern-glow)" opacity="0.18"/>
+      </g>
+
+      <!-- ===== LA PORTE (hotspot actif) ===== -->
+      <g class="hotspot" data-slide="porte" tabindex="0" role="button"
+         aria-label="La porte : CloudNativePG, vue d'ensemble">
+        <!-- halo cliquable -->
+        <rect class="glow-target" x="535" y="520" width="130" height="140" rx="4"
+              fill="var(--wood-dark)"/>
+        <!-- battants -->
+        <rect x="540" y="525" width="58" height="130" fill="var(--wood)" stroke="var(--wood-dark)" stroke-width="3"/>
+        <rect x="602" y="525" width="58" height="130" fill="var(--wood)" stroke="var(--wood-dark)" stroke-width="3"/>
+        <line x1="600" y1="525" x2="600" y2="655" stroke="var(--wood-dark)" stroke-width="3"/>
+        <!-- traverses -->
+        <line x1="540" y1="568" x2="660" y2="568" stroke="var(--wood-dark)" stroke-width="2.5"/>
+        <line x1="540" y1="612" x2="660" y2="612" stroke="var(--wood-dark)" stroke-width="2.5"/>
+        <!-- poignées -->
+        <circle cx="590" cy="595" r="4" fill="var(--lantern-glow)"/>
+        <circle cx="610" cy="595" r="4" fill="var(--lantern-glow)"/>
+        <!-- noren (rideau) avec un kanji -->
+        <rect x="533" y="505" width="134" height="34" rx="3" fill="var(--accent)"/>
+        <text x="600" y="530" text-anchor="middle" font-size="22" fill="var(--paper)"
+              font-family="serif">関</text>
+        <!-- badge pulsant -->
+        <circle class="pulse" cx="600" cy="490" r="10" fill="var(--lantern-glow)"/>
+      </g>
+
+      <!-- Légende sous la porte -->
+      <text x="600" y="685" text-anchor="middle" font-size="15" fill="var(--paper)"
+            opacity="0.9" font-family="serif">La Porte → CloudNativePG</text>
+    </svg>
+  </main>
+
+  <!-- Overlay de la slide -->
+  <div class="overlay" id="overlay">
+    <div class="slide" id="slide" role="dialog" aria-modal="true"></div>
+  </div>
+
+  <script src="data/cloudnativepg.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

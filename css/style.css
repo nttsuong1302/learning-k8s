@@ -212,24 +212,24 @@ html, body {
   font-size: 0.78rem;
   opacity: 0.7;
 }
-.scene-nav {
-  margin-top: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
+.scene-footer { justify-content: space-between; gap: 16px; }
+.footer-nav { display: flex; gap: 8px; flex: none; }
 .nav-btn {
   font-family: inherit;
   font-size: 0.82rem;
-  padding: 8px 12px;
+  padding: 8px 14px;
   border: 1px solid var(--accent);
-  background: transparent;
-  color: var(--accent);
+  background: var(--accent);
+  color: var(--paper);
   border-radius: 8px;
   cursor: pointer;
   transition: all .18s ease;
 }
-.nav-btn:hover { background: var(--accent); color: var(--paper); }
+.nav-btn:hover { filter: brightness(1.08); }
+
+@media (max-width: 560px) {
+  .scene-footer { flex-direction: column; align-items: flex-start; }
+}
 
 /* Objets cliquables sur la porte */
 .door-obj { cursor: pointer; transition: filter .2s ease; }

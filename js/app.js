@@ -130,10 +130,14 @@
       </div>` : "";
   }
 
-  function navHTML(data) {
-    if (!data.nav || !data.nav.length) return "";
-    return `<div class="scene-nav">` + data.nav.map((n) =>
-      `<button class="nav-btn" data-go="${esc(n.slide)}">${esc(n.label)}</button>`).join("") + `</div>`;
+  function sceneFooterHTML(data) {
+    const src = data.source
+      ? `<span class="footer-src"><span class="src-label">Source :</span>
+           <a href="${esc(data.source)}" target="_blank" rel="noopener">${esc(data.sourceLabel || data.source)} ↗</a></span>`
+      : `<span></span>`;
+    const nav = (data.nav || []).map((n) =>
+      `<button class="nav-btn" data-go="${esc(n.slide)}">${esc(n.label)}</button>`).join("");
+    return `<div class="slide-footer scene-footer">${src}<span class="footer-nav">${nav}</span></div>`;
   }
 
   function renderRubrique(obj, index) {
@@ -163,14 +167,13 @@
         <div class="door-left">
           ${buildSceneSVG(data.scene, objs)}
           <p class="door-hint">${esc(data.hint || "Clique un objet.")}</p>
-          ${navHTML(data)}
         </div>
         <div class="door-right">
           <div class="rub-tabs">${tabs}</div>
           <div class="rubrique" id="rubrique"></div>
         </div>
       </div>
-      ${footerHTML(data)}`;
+      ${sceneFooterHTML(data)}`;
 
     selectRubrique(data, objs[0].id);
   }
@@ -233,12 +236,6 @@
 
     if (e.target.closest("[data-close]")) { close(); return; }
     if (e.target === overlay) close();
-  });
-
-  // Clic droit sur un objet de la scène principale -> on "entre"
-  document.addEventListener("contextmenu", (e) => {
-    const rc = e.target.closest("[data-rightslide]");
-    if (rc) { e.preventDefault(); open(rc.getAttribute("data-rightslide")); }
   });
 
   document.addEventListener("keydown", (e) => {

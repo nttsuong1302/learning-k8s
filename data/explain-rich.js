@@ -142,6 +142,47 @@
     "t2-w16": "`kubectl rollout restart deployment/<nom>` recrée tous les Pods de manière progressive, sans changer le spec ni couper le service. Utile pour forcer la relecture d'une configuration ou d'un Secret monté.",
     "t2-w17": "Un ConfigMap est limité à environ 1 MiB, une contrainte héritée d'etcd. Pour des fichiers plus volumineux, mieux vaut passer par un volume dédié.",
     "t2-w18": "`nodeSelector` place un Pod sur les nœuds portant exactement les labels indiqués. C'est la forme la plus simple de contrainte de placement ; nodeAffinity en offre une version plus riche.",
+
+    /* ---------- STORAGE (theory.js) ---------- */
+    "th-sto-1": "Le PersistentVolumeClaim (PVC) est la demande de stockage formulée par un utilisateur ou un Pod : il précise la taille, le mode d'accès et éventuellement la StorageClass. Le PersistentVolume (PV) est la ressource réelle ; le PVC s'y lie (Bound) dès qu'un PV compatible existe.",
+    "th-sto-2": "Une StorageClass décrit un type de stockage et le provisioner capable de le créer. Quand un PVC la référence, le PV est fabriqué automatiquement à la demande — c'est le provisionnement dynamique, qui évite de préparer les volumes à l'avance.",
+    "th-sto-3": "Le mode ReadWriteOnce (RWO) autorise un montage en lecture-écriture par un seul nœud à la fois — le cas typique d'un disque block. ReadOnlyMany permet la lecture par plusieurs nœuds, ReadWriteMany l'écriture par plusieurs, et ReadWriteOncePod restreint à un unique Pod.",
+    "th-sto-4": "La reclaimPolicy d'un PV décide de son sort à la suppression du PVC. Avec Delete, le PV et le stockage sous-jacent sont supprimés automatiquement. Avec Retain, le PV est conservé (état Released) pour permettre une récupération manuelle des données.",
+    "th-sto-5": "Un volume emptyDir est créé au démarrage du Pod, partagé entre ses conteneurs, puis détruit quand le Pod disparaît. Il sert de stockage temporaire (cache, scratch) et ne survit pas au Pod, contrairement à un volume persistant.",
+    "th-sto-6": "Un PVC reste Pending quand aucun PV ne satisfait sa demande (taille, mode d'accès, StorageClass) et qu'aucun provisionnement dynamique n'est disponible. On vérifie donc l'existence d'un PV compatible ou d'une StorageClass capable de créer le volume.",
+
+    /* ---------- STORAGE (theory2.js) ---------- */
+    "t2-s1": "Le binding d'un PVC à un PV repose sur la compatibilité : taille demandée, modes d'accès et storageClassName. Un PV trop petit ou d'une autre classe ne sera pas retenu, même disponible.",
+    "t2-s2": "ReadWriteOnce (RWO) monte le volume en lecture-écriture sur un seul nœud à la fois. C'est le mode le plus courant, adapté aux disques block. ReadWriteOncePod va plus loin en le limitant à un seul Pod.",
+    "t2-s3": "La reclaimPolicy Retain conserve le PV et ses données après suppression du PVC : le PV passe en Released et attend une intervention manuelle. Delete, à l'inverse, supprime le PV et le stockage réel.",
+    "t2-s4": "Une StorageClass associe un provisioner à des paramètres de stockage : dès qu'un PVC la référence, un PV est créé dynamiquement. C'est ce qui permet d'obtenir du stockage à la demande sans préparation préalable.",
+    "t2-s5": "emptyDir est un volume éphémère : créé avec le Pod, partagé entre ses conteneurs, et effacé à la suppression du Pod. Il est parfait pour un cache ou un espace de travail temporaire commun.",
+    "t2-s6": "Un volume hostPath monte un fichier ou un dossier du système de fichiers du nœud dans le conteneur. Puissant mais à éviter en production : il lie le Pod à un nœud précis et pose des risques de sécurité.",
+    "t2-s7": "Agrandir un PVC existant nécessite que sa StorageClass ait allowVolumeExpansion: true, et que le provisioner sous-jacent supporte l'expansion. On modifie ensuite la taille demandée dans le PVC.",
+    "t2-s8": "Une StorageClass devient celle par défaut grâce à l'annotation storageclass.kubernetes.io/is-default-class réglée à « true ». Un PVC sans storageClassName utilise alors automatiquement cette classe.",
+    "t2-s9": "En provisionnement statique, c'est l'administrateur qui crée les PV à l'avance ; les PVC viennent ensuite s'y lier. En dynamique, ce rôle est tenu par le provisioner de la StorageClass.",
+    "t2-s10": "Un volume se déclare au niveau du Pod (section `volumes`), puis chaque conteneur le monte via `volumeMounts` en indiquant un mountPath. Le montage n'est donc pas automatique : il faut le déclarer côté conteneur.",
+    "t2-s11": "Monté en volume, un ConfigMap expose chacune de ses clés comme un fichier dans le répertoire de montage. L'option subPath permet de n'y monter qu'une seule clé sans masquer le reste du dossier.",
+    "t2-s12": "Avec la reclaimPolicy Retain, un PV passe à l'état Released après la suppression de son PVC : les données sont conservées mais le PV n'est pas réutilisable tel quel — il faut le nettoyer ou le recréer manuellement.",
+
+    /* ---------- CLOUDNATIVEPG (theory2.js) ---------- */
+    "t2-c1": "Le plugin kubectl `cnpg` simplifie l'exploitation d'un Cluster CloudNativePG : `kubectl cnpg status <cluster>` en affiche l'état complet (rôle des instances, réplication, santé). C'est l'outil de premier diagnostic.",
+    "t2-c2": "CloudNativePG crée trois Services pour un Cluster : `-rw` (primaire, écritures), `-ro` (hot standby, lecture seule) et `-r` (n'importe quelle instance, lecture). Pour diriger des lectures vers les réplicas, on utilise donc `-ro`.",
+    "t2-c3": "Une ressource `Backup` déclenche une sauvegarde à la demande d'un Cluster, tandis que `ScheduledBackup` planifie des sauvegardes récurrentes via un cron à six champs (secondes incluses).",
+    "t2-c4": "Le bootstrap d'un Cluster CNPG suit une seule méthode par manifeste. `spec.bootstrap.initdb` — création d'un cluster PostgreSQL vide — est la méthode par défaut, aux côtés de recovery (restauration) et pg_basebackup (clonage).",
+    "t2-c5": "Pour une restauration à un instant T (PITR), l'archive des WAL ne suffit pas : il faut aussi une base backup physique servant de point de départ. WAL + base backup permettent alors un RPO ≤ 5 minutes.",
+
+    /* ---------- CLOUDNATIVEPG (cnpg.js) ---------- */
+    "cn-th-1": "CloudNativePG pilote PostgreSQL de façon déclarative via la ressource personnalisée `Cluster`, qui décrit un primaire et d'éventuels réplicas. Toute la gestion — configuration, rôles, sauvegardes — passe par cette CRD et ses ressources associées.",
+    "cn-th-2": "Un Cluster CNPG expose trois Services. `<cluster>-rw` route vers le primaire et sert donc les écritures ; `<cluster>-ro` dessert les réplicas en lecture seule, et `<cluster>-r` n'importe quelle instance en lecture.",
+    "cn-th-3": "Contrairement à beaucoup d'opérateurs de bases de données, CloudNativePG n'utilise pas de StatefulSets : il gère directement les PersistentVolumeClaims des instances. Cela lui donne un contrôle plus fin sur le cycle de vie des volumes et les basculements.",
+    "cn-th-4": "Un Cluster s'amorce via spec.bootstrap avec une seule méthode : initdb pour créer un cluster vide, recovery pour restaurer depuis une sauvegarde (PITR possible), ou pg_basebackup pour cloner un cluster existant de même version majeure.",
+    "cn-th-5": "La restauration à un instant T combine l'archive continue des WAL et une base backup physique : « un WAL archive seul est inutile ». Sans base backup, il n'existe aucun point de départ pour rejouer les WAL.",
+    "cn-th-6": "CloudNativePG expose ses métriques au format Prometheus sur le port 9187 — le port conventionnel d'un exporter PostgreSQL. Cela permet de superviser l'état du cluster et de la réplication.",
+    "cn-th-7": "Deux ressources gèrent les sauvegardes : `Backup` pour une sauvegarde ponctuelle et `ScheduledBackup` pour des sauvegardes planifiées via un cron à six champs. Elles précisent le cluster cible et la méthode (plugin ou volumeSnapshot).",
+    "cn-th-8": "CloudNativePG s'appuie sur la réplication streaming native de PostgreSQL et supporte le mode synchrone en deux variantes : basée sur le quorum et basée sur la priorité. La réplication se fait au niveau applicatif, pas au niveau du stockage.",
+    "cn-th-9": "CloudNativePG, créé à l'origine par EDB, est un projet open-source distribué sous licence Apache 2.0. Il évolue aujourd'hui sous la gouvernance de la CNCF.",
+    "cn-th-10": "Au sein d'un même cluster Kubernetes, la perte du primaire déclenche un failover automatique : CloudNativePG promeut une autre instance et fait pointer le service `-rw` dessus, sans intervention. En topologie multi-cluster (replica cluster), la promotion reste en revanche manuelle.",
   };
 
   let n = 0;

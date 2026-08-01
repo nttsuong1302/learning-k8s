@@ -260,8 +260,12 @@
       const why = (q.why && q.why[i]) ? `<p class="dbg-why">${esc(q.why[i])}</p>` : "";
       return `<div class="dbg ${cls}"><div class="dbg-h"><span class="dbg-m">${m}</span><span class="dbg-c">${esc(ch)}</span>${tag}</div>${why}</div>`;
     }).join("");
-    const synth = q.explain ? `<div class="synth"><b>💡 En résumé</b><p>${esc(q.explain)}</p></div>` : "";
-    const doc = q.ref ? `<a class="doc-link" href="${esc(q.ref)}" target="_blank" rel="noopener">📚 Documentation officielle ↗</a>` : "";
+    const synth = q.explain ? `<div class="synth"><b>💡 En résumé (synthèse fidèle)</b><p>${esc(q.explain)}</p></div>` : "";
+    let doc = "";
+    if (q.ref) {
+      const host = (q.ref.match(/^https?:\/\/([^/]+)/) || [])[1] || "doc";
+      doc = `<a class="doc-link" href="${esc(q.ref)}" target="_blank" rel="noopener">📖 Lire le paragraphe officiel sur ${esc(host)} ↗</a>`;
+    }
     return `<div class="debrief">${rows}</div>${synth}${doc}`;
   }
 

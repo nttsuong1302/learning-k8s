@@ -18,6 +18,19 @@ couvrant **tous les sujets Kubernetes / CKA**, avec deux natures de questions :
 
 Pas de backend : tout tourne côté navigateur (hébergeable sur GitHub Pages).
 
+## 📏 Principes de fidélité (IMPORTANT — priment sur tout le reste)
+
+1. **Ne JAMAIS inventer.** Aucune affirmation, commande, champ, valeur par défaut
+   ou comportement ne doit être écrit « de mémoire » ou supposé.
+2. **Se baser strictement sur la documentation OFFICIELLE :**
+   - Kubernetes / CKA → **https://kubernetes.io/docs/**
+   - CloudNativePG (CNPG) → **https://cloudnative-pg.io/docs/**
+3. **Chaque question et chaque technique porte un lien `ref`** vers la page
+   officielle qui la justifie. Si on ne peut pas sourcer, on n'écrit pas.
+4. **En cas de doute, on va vérifier la doc** (WebFetch) plutôt que de deviner.
+5. On peut reformuler/traduire en français, mais **sans altérer le fond** ni
+   ajouter de détails non documentés.
+
 ## 🧭 Domaines CKA (pondération officielle)
 
 | id | Domaine | Poids |
@@ -27,6 +40,12 @@ Pas de backend : tout tourne côté navigateur (hébergeable sur GitHub Pages).
 | `networking` | Services & Networking | 20 % |
 | `storage` | Storage | 10 % |
 | `troubleshooting` | Troubleshooting | 30 % |
+
+## 🐘 Sujet complémentaire (hors CKA)
+
+| id | Sujet | Source officielle |
+|----|-------|-------------------|
+| `cnpg` | CloudNativePG — opérateur PostgreSQL sur Kubernetes | https://cloudnative-pg.io/docs/ |
 
 ## 🧩 Modèle de données (une question = un objet JS)
 

@@ -37,7 +37,7 @@
       const pct = qs.length ? Math.round((done / qs.length) * 100) : 0;
       return `
         <button class="domain-card" data-domain="${d.id}" style="--c:${d.color}">
-          <div class="dc-top"><span class="dc-icon">${d.icon}</span><span class="dc-weight">${d.weight}%</span></div>
+          <div class="dc-top"><span class="dc-icon">${d.icon}</span><span class="dc-weight">${d.badge || d.weight + "%"}</span></div>
           <h3>${esc(d.short)}</h3>
           <p class="dc-name">${esc(d.name)}</p>
           <div class="dc-bar"><span style="width:${pct}%"></span></div>

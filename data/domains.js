@@ -8,4 +8,5 @@ window.CKA.domains = [
   { id: "networking", short: "Networking", name: "Services & Networking", weight: 20, icon: "🌐", color: "#10b981" },
   { id: "storage", short: "Storage", name: "Storage", weight: 10, icon: "💾", color: "#f59e0b" },
   { id: "troubleshooting", short: "Troubleshooting", name: "Troubleshooting", weight: 30, icon: "🩺", color: "#ef4444" },
+  { id: "cnpg", short: "CloudNativePG", name: "CloudNativePG — opérateur PostgreSQL sur Kubernetes", weight: null, badge: "hors CKA", icon: "🐘", color: "#336791" },
 ];

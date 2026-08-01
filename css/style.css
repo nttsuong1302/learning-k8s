@@ -39,6 +39,13 @@ a { color: #7fb0ff; }
 .stats b { font-size: 1.7rem; }
 .stats span { color: var(--muted); font-size: .78rem; text-transform: uppercase; letter-spacing: 1px; }
 .quick { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+.hero-lang { display: flex; align-items: center; gap: 10px; justify-content: center; margin-bottom: 16px; }
+.hero-lang .muted { font-size: .8rem; }
+.lang-switch { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+.lang-switch button { border: none; background: transparent; color: var(--muted); padding: 4px 12px; cursor: pointer; font-size: .8rem; font-weight: 600; font-family: inherit; }
+.lang-switch button.on { background: var(--primary); color: #fff; }
+.qtop .lang-switch { margin-left: auto; }
+.qtop .qcount { margin-left: 12px; }
 
 .btn {
   background: var(--panel2); color: var(--text); border: 1px solid var(--line);

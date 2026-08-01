@@ -46,6 +46,15 @@
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const shuffle = (a) => { const r = a.slice(); for (let i = r.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [r[i], r[j]] = [r[j], r[i]]; } return r; };
 
+  // ---------- Langue (FR par défaut, EN = conditions d'examen) ----------
+  let lang = localStorage.getItem("cka-lang") || "fr";
+  // Retourne le champ traduit si dispo en EN, sinon le français.
+  const tr = (q, f) => (lang === "en" && q.en && q.en[f] != null) ? q.en[f] : q[f];
+  const langSwitchHTML = () =>
+    `<div class="lang-switch" title="Langue des questions">` +
+    ["fr", "en"].map((l) => `<button data-lang="${l}" class="${lang === l ? "on" : ""}">${l.toUpperCase()}</button>`).join("") +
+    `</div>`;
+
   // ============================ ACCUEIL ============================
   function renderHome() {
     const total = BANK.length;
@@ -75,6 +84,7 @@
           <div><b>${answered}</b><span>abordées</span></div>
           <div><b>${correct}</b><span>réussies</span></div>
         </div>
+        <div class="hero-lang">${langSwitchHTML()} <span class="muted">langue des questions (EN = conditions d'examen)</span></div>
         <div class="quick">
           <button class="btn primary" data-start="all">▶ Tout réviser (${total})</button>
           <button class="btn" data-start="theory">📖 Théorie (${BANK.filter((q) => q.type === "theory").length})</button>
@@ -213,6 +223,7 @@
       <div class="qtop">
         <button class="btn ghost sm" data-home>← Accueil</button>
         <div class="qtitle">${session.title}</div>
+        ${langSwitchHTML()}
         <div class="qcount">${session.i + 1} / ${session.list.length}</div>
       </div>
       ${progressBarHTML()}
@@ -238,18 +249,19 @@
   // ---------- THÉORIE ----------
   function theoryHTML(q) {
     const multi = q.correct.length > 1;
-    const opts = q.choices.map((ch, i) =>
+    const opts = tr(q, "choices").map((ch, i) =>
       `<label class="opt" data-i="${i}"><input type="${multi ? "checkbox" : "radio"}" name="opt"> <span>${esc(ch)}</span></label>`).join("");
+    const multiNote = lang === "en" ? "Multiple correct answers possible." : "Plusieurs bonnes réponses possibles.";
     return `
-      <h2 class="qtext">${esc(q.q)}</h2>
-      ${multi ? '<p class="muted">Plusieurs bonnes réponses possibles.</p>' : ""}
+      <h2 class="qtext">${esc(tr(q, "q"))}</h2>
+      ${multi ? `<p class="muted">${multiNote}</p>` : ""}
       <div class="opts">${opts}</div>
       <div class="qactions"><button class="btn primary" data-check>Valider</button></div>
       <div class="feedback" hidden></div>`;
   }
 
   function debriefHTML(q, chosen) {
-    const rows = q.choices.map((ch, i) => {
+    const rows = tr(q, "choices").map((ch, i) => {
       const isC = q.correct.includes(i);
       const isSel = chosen.includes(i);
       const cls = isC ? "correct" : (isSel ? "wrong" : "");
@@ -257,10 +269,13 @@
       const tag = isC
         ? (isSel ? '<em class="ok">✓ ta réponse — correcte</em>' : '<em class="ok">bonne réponse</em>')
         : (isSel ? '<em class="ko">✗ ta réponse — incorrecte</em>' : "");
-      const why = (q.why && q.why[i]) ? `<p class="dbg-why">${esc(q.why[i])}</p>` : "";
+      const whyArr = tr(q, "why") || [];
+      const why = whyArr[i] ? `<p class="dbg-why">${esc(whyArr[i])}</p>` : "";
       return `<div class="dbg ${cls}"><div class="dbg-h"><span class="dbg-m">${m}</span><span class="dbg-c">${esc(ch)}</span>${tag}</div>${why}</div>`;
     }).join("");
-    const synth = q.explain ? `<div class="synth"><b>💡 En résumé (synthèse fidèle)</b><p>${esc(q.explain)}</p></div>` : "";
+    const synthLabel = lang === "en" ? "💡 Summary" : "💡 En résumé (synthèse fidèle)";
+    const synthTxt = tr(q, "explain");
+    const synth = synthTxt ? `<div class="synth"><b>${synthLabel}</b><p>${esc(synthTxt)}</p></div>` : "";
     let doc = "";
     if (q.ref) {
       const host = (q.ref.match(/^https?:\/\/([^/]+)/) || [])[1] || "doc";
@@ -369,6 +384,8 @@
   document.addEventListener("click", (e) => {
     const t = e.target;
     if (t.closest("[data-home]")) { session = null; renderHome(); return; }
+    const lg = t.closest("[data-lang]");
+    if (lg) { lang = lg.getAttribute("data-lang"); localStorage.setItem("cka-lang", lang); if (session) renderQuestion(); else renderHome(); return; }
     if (t.closest("[data-techs]")) { renderTechIndex(); return; }
     if (t.closest("[data-stats]")) { renderStats(); return; }
     if (t.closest("[data-tech-index]")) { renderTechIndex(); return; }

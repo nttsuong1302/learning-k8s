@@ -77,10 +77,25 @@ cordon/uncordon, drain, taint…). Sorties réalistes en mode tableau. Le
 simulateur n'exécute rien de réel : il fait évoluer un état d'objets et permet
 de **vérifier** les objectifs d'un scénario.
 
+## 🌐 Bilingue FR / EN (conditions d'examen)
+
+L'examen CKA se passe **en anglais** (contenu aussi dispo en chinois simplifié et
+japonais ; surveillance en anglais). Le trainer propose donc un **basculement
+FR/EN** sur les questions :
+
+- Le **contenu de la question** (`q`) et les **options** (`choices`) peuvent être
+  affichés en anglais pour reproduire les conditions réelles.
+- Le **débriefing** (explication `explain` + `why` par option) **reste en
+  français** : c'est l'aide à l'apprentissage.
+- Modèle : chaque question peut porter `en: { q, choices, explain?, why? }`.
+  Les traductions vivent dans `data/translations-en.js` (surcharge par id).
+  **Repli automatique en FR** si une question n'a pas de version EN.
+- La langue est mémorisée en `localStorage` (`cka-lang`).
+
 ## 🛠️ Pile technique
 
 HTML + CSS + JavaScript **vanilla**. Données en fichiers JS (`window.CKA`).
-Progression stockée en `localStorage`.
+Progression et langue stockées en `localStorage`.
 
 ## 📁 Organisation
 
@@ -88,13 +103,22 @@ Progression stockée en `localStorage`.
 index.html
 css/style.css
 js/
-  kube-sim.js       # cluster simulé + parseur kubectl
-  app.js            # moteur : routeur, quiz, terminal, progression
+  kube-sim.js         # cluster simulé + parseur kubectl
+  app.js              # moteur : routeur, quiz, terminal, techniques, résultats, langue
 data/
-  domains.js        # métadonnées des 5 domaines
-  theory.js         # questions théoriques (QCM)
-  practical.js      # scénarios pratiques (+ objectifs de validation)
+  domains.js          # métadonnées des domaines (+ CNPG hors CKA)
+  theory.js           # QCM lot 1 (avec why[] par option)
+  theory2.js          # QCM lot 2 (+100)
+  practical.js        # scénarios pratiques (+ objectifs de validation)
+  techniques.js       # catalogue de techniques à parcourir
+  cnpg.js             # techniques + QCM CloudNativePG (doc officielle)
+  explain-rich.js     # surcharge : explications en paragraphes (par id)
+  translations-en.js  # surcharge : traductions EN des questions (par id)
 ```
+
+> Les fichiers `*-rich` / `translations-*` **surchargent** des champs par id,
+> chargés après les banques. Ils permettent d'enrichir/traduire par lots sans
+> toucher aux banques de questions.
 
 ## 📐 Principes de travail
 

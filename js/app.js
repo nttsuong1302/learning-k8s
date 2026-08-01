@@ -248,6 +248,23 @@
       <div class="feedback" hidden></div>`;
   }
 
+  function debriefHTML(q, chosen) {
+    const rows = q.choices.map((ch, i) => {
+      const isC = q.correct.includes(i);
+      const isSel = chosen.includes(i);
+      const cls = isC ? "correct" : (isSel ? "wrong" : "");
+      const m = isC ? "✓" : (isSel ? "✗" : "·");
+      const tag = isC
+        ? (isSel ? '<em class="ok">✓ ta réponse — correcte</em>' : '<em class="ok">bonne réponse</em>')
+        : (isSel ? '<em class="ko">✗ ta réponse — incorrecte</em>' : "");
+      const why = (q.why && q.why[i]) ? `<p class="dbg-why">${esc(q.why[i])}</p>` : "";
+      return `<div class="dbg ${cls}"><div class="dbg-h"><span class="dbg-m">${m}</span><span class="dbg-c">${esc(ch)}</span>${tag}</div>${why}</div>`;
+    }).join("");
+    const synth = q.explain ? `<div class="synth"><b>💡 En résumé</b><p>${esc(q.explain)}</p></div>` : "";
+    const doc = q.ref ? `<a class="doc-link" href="${esc(q.ref)}" target="_blank" rel="noopener">📚 Documentation officielle ↗</a>` : "";
+    return `<div class="debrief">${rows}</div>${synth}${doc}`;
+  }
+
   function wireTheory(q) {
     const card = $(".qcard");
     $("[data-check]", card).addEventListener("click", () => {
@@ -261,7 +278,7 @@
       const fb = $(".feedback", card);
       fb.hidden = false;
       fb.className = "feedback " + (ok ? "good" : "bad");
-      fb.innerHTML = `<b>${ok ? "✓ Correct" : "✗ Incorrect"}</b><p>${esc(q.explain)}</p>${q.ref ? `<a href="${esc(q.ref)}" target="_blank" rel="noopener">📚 Documentation ↗</a>` : ""}`;
+      fb.innerHTML = `<b class="fb-head">${ok ? "✓ Correct" : "✗ Incorrect"}</b>${debriefHTML(q, chosen)}`;
       mark(q.id, ok);
     });
   }

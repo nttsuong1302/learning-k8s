@@ -16,10 +16,31 @@
   const loadProg = () => { try { return JSON.parse(localStorage.getItem(PKEY)) || {}; } catch (e) { return {}; } };
   const saveProg = (p) => localStorage.setItem(PKEY, JSON.stringify(p));
   let progress = loadProg();
-  function mark(id, correct) {
-    const cur = progress[id] || {};
-    progress[id] = { seen: true, correct: correct || cur.correct || false, ts: Date.now() };
+  // Entrée : { seen, correct (déjà réussie ?), attempts, ok, ts }
+  function mark(id, isCorrect) {
+    const cur = progress[id] || { attempts: 0, ok: 0, correct: false };
+    cur.seen = true;
+    cur.attempts = (cur.attempts || 0) + 1;
+    if (isCorrect) { cur.ok = (cur.ok || 0) + 1; cur.correct = true; }
+    cur.ts = Date.now();
+    progress[id] = cur;
     saveProg(progress);
+  }
+  // Statistiques par domaine (tolère l'ancien format {seen,correct})
+  function computeStats() {
+    const per = {};
+    DOMAINS.forEach((d) => (per[d.id] = { total: 0, seen: 0, mastered: 0, attempts: 0, ok: 0 }));
+    BANK.forEach((q) => {
+      const s = per[q.domain]; if (!s) return;
+      s.total++;
+      const p = progress[q.id]; if (!p || !p.seen) return;
+      s.seen++;
+      const att = p.attempts != null ? p.attempts : 1;
+      const ok = p.ok != null ? p.ok : (p.correct ? 1 : 0);
+      s.attempts += att; s.ok += ok;
+      if (p.correct) s.mastered++;
+    });
+    return per;
   }
 
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -60,12 +81,59 @@
           <button class="btn" data-start="practical">🧪 Pratique (${BANK.filter((q) => q.type === "practical").length})</button>
           <button class="btn" data-start="exam">🎲 Mode examen (aléatoire)</button>
           <button class="btn accent" data-techs>🧭 Parcourir les techniques (${TECHS.length})</button>
+          <button class="btn" data-stats>📊 Mes résultats</button>
           <button class="btn ghost" data-reset>↺ Réinitialiser la progression</button>
         </div>
       </section>
       <h2 class="section-title">Domaines CKA</h2>
       <div class="domain-grid">${cards}</div>
       <footer class="foot">Banque v1 · on grossit ensuite par lots jusqu'à 1000 questions. Progression enregistrée localement (ce navigateur).</footer>`;
+  }
+
+  // ============================ RÉSULTATS ============================
+  function renderStats() {
+    const per = computeStats();
+    const rated = DOMAINS.map((d) => {
+      const s = per[d.id];
+      const acc = s.attempts ? Math.round((s.ok / s.attempts) * 100) : null;
+      return { d, s, acc };
+    });
+    const attempted = rated.filter((r) => r.s.attempts > 0);
+    const totAtt = rated.reduce((a, r) => a + r.s.attempts, 0);
+    const totOk = rated.reduce((a, r) => a + r.s.ok, 0);
+    const overall = totAtt ? Math.round((totOk / totAtt) * 100) : 0;
+
+    let insight = '<p class="muted">Réponds à quelques questions pour voir apparaître tes points forts et tes points faibles par catégorie.</p>';
+    if (attempted.length) {
+      const sorted = attempted.slice().sort((a, b) => b.acc - a.acc);
+      const best = sorted[0], worst = sorted[sorted.length - 1];
+      insight = `<div class="insight">
+        <div class="ins good"><span>💪 Point fort</span><b>${best.d.icon} ${esc(best.d.short)}</b><i>${best.acc}% de bonnes réponses</i></div>
+        <div class="ins bad"><span>🎯 À travailler</span><b>${worst.d.icon} ${esc(worst.d.short)}</b><i>${worst.acc}% de bonnes réponses</i></div>
+      </div>`;
+    }
+
+    const rows = rated.map((r) => {
+      const acc = r.acc;
+      const color = acc == null ? "#3a4a63" : acc >= 75 ? "var(--good)" : acc >= 50 ? "var(--warn)" : "var(--bad)";
+      const wrong = r.s.attempts - r.s.ok;
+      return `<div class="stat-row">
+        <div class="sr-head"><span class="sr-name">${r.d.icon} ${esc(r.d.short)}</span><span class="sr-acc" style="color:${color}">${acc == null ? "—" : acc + "%"}</span></div>
+        <div class="sr-bar"><span style="width:${acc || 0}%;background:${color}"></span></div>
+        <div class="sr-meta">${r.s.mastered}/${r.s.total} maîtrisées · ${r.s.attempts} tentatives · <span class="ko">${wrong} erreurs</span></div>
+      </div>`;
+    }).join("");
+
+    app.innerHTML = `
+      <div class="qtop">
+        <button class="btn ghost sm" data-home>← Accueil</button>
+        <div class="qtitle">📊 Mes résultats</div>
+        <div class="qcount">${overall}%</div>
+      </div>
+      <p class="muted" style="margin:2px 0 14px">Taux global de bonnes réponses : <b style="color:var(--text)">${overall}%</b> (${totOk}/${totAtt} tentatives). Les catégories où tu fais le plus d'erreurs ressortent en rouge.</p>
+      ${insight}
+      <div class="stats-list">${rows}</div>
+      <div class="qnav"><button class="btn ghost" data-reset>↺ Réinitialiser la progression</button></div>`;
   }
 
   // ============================ TECHNIQUES ============================
@@ -281,6 +349,7 @@
     const t = e.target;
     if (t.closest("[data-home]")) { session = null; renderHome(); return; }
     if (t.closest("[data-techs]")) { renderTechIndex(); return; }
+    if (t.closest("[data-stats]")) { renderStats(); return; }
     if (t.closest("[data-tech-index]")) { renderTechIndex(); return; }
     const to = t.closest("[data-tech-open]");
     if (to) { renderTechReader(parseInt(to.getAttribute("data-tech-open"), 10)); return; }

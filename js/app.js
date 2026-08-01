@@ -6,7 +6,10 @@
   const app = $("#app");
   const BANK = window.CKA.questions;
   const DOMAINS = window.CKA.domains;
+  const TECHS = window.CKA.techniques || [];
   const domainById = (id) => DOMAINS.find((d) => d.id === id);
+  // Techniques ordonnées par domaine (pour un parcours cohérent Précédent/Suivant)
+  const orderedTechs = DOMAINS.reduce((acc, d) => acc.concat(TECHS.filter((t) => t.domain === d.id)), []);
 
   // ---------- progression (localStorage) ----------
   const PKEY = "cka-progress-v1";
@@ -56,6 +59,7 @@
           <button class="btn" data-start="theory">📖 Théorie (${BANK.filter((q) => q.type === "theory").length})</button>
           <button class="btn" data-start="practical">🧪 Pratique (${BANK.filter((q) => q.type === "practical").length})</button>
           <button class="btn" data-start="exam">🎲 Mode examen (aléatoire)</button>
+          <button class="btn accent" data-techs>🧭 Parcourir les techniques (${TECHS.length})</button>
           <button class="btn ghost" data-reset>↺ Réinitialiser la progression</button>
         </div>
       </section>
@@ -63,6 +67,62 @@
       <div class="domain-grid">${cards}</div>
       <footer class="foot">Banque v1 · on grossit ensuite par lots jusqu'à 1000 questions. Progression enregistrée localement (ce navigateur).</footer>`;
   }
+
+  // ============================ TECHNIQUES ============================
+  let techFilter = "";
+
+  function techCardHTML(t) {
+    const gi = orderedTechs.indexOf(t);
+    return `<button class="tech-card" data-tech-open="${gi}"><span class="tc-title">${esc(t.title)}</span><span class="tc-sum">${esc(t.summary)}</span></button>`;
+  }
+
+  function renderTechIndex() {
+    const f = techFilter.toLowerCase();
+    const match = (t) => !f || (t.title + " " + t.summary + " " + (t.points || []).join(" ") + " " + (t.cmds || []).join(" ")).toLowerCase().includes(f);
+    const groups = DOMAINS.map((d) => {
+      const list = TECHS.filter((t) => t.domain === d.id && match(t));
+      if (!list.length) return "";
+      return `<div class="tech-group"><h3 style="--c:${d.color}">${d.icon} ${esc(d.short)} <span>${list.length}</span></h3><div class="tech-list">${list.map(techCardHTML).join("")}</div></div>`;
+    }).join("");
+    app.innerHTML = `
+      <div class="qtop">
+        <button class="btn ghost sm" data-home>← Accueil</button>
+        <div class="qtitle">🧭 Techniques Kubernetes</div>
+        <div class="qcount">${TECHS.length}</div>
+      </div>
+      <p class="muted" style="margin:2px 0 14px">Aide-mémoire à parcourir. Clique une technique, puis navigue avec Précédent / Suivant.</p>
+      <input class="search" id="techSearch" placeholder="🔍 Filtrer (ex. etcd, service, drain, PVC…)" value="${esc(techFilter)}">
+      <div class="tech-index">${groups || '<p class="muted">Aucune technique ne correspond.</p>'}</div>`;
+    const s = $("#techSearch");
+    s.addEventListener("input", () => { techFilter = s.value; const pos = s.selectionStart; renderTechIndex(); const n = $("#techSearch"); n.focus(); n.setSelectionRange(pos, pos); });
+  }
+
+  function renderTechReader(i) {
+    if (i < 0) i = 0; if (i > orderedTechs.length - 1) i = orderedTechs.length - 1;
+    const t = orderedTechs[i]; const d = domainById(t.domain);
+    const cmds = (t.cmds || []).map((c) => `<pre class="cmd">${esc(c)}</pre>`).join("");
+    app.innerHTML = `
+      <div class="qtop">
+        <button class="btn ghost sm" data-tech-index>← Liste</button>
+        <div class="qtitle">🧭 Techniques</div>
+        <div class="qcount">${i + 1} / ${orderedTechs.length}</div>
+      </div>
+      <div class="qbar"><span style="width:${((i + 1) / orderedTechs.length) * 100}%"></span></div>
+      <div class="qtags"><span class="tag" style="--c:${d.color}">${d.icon} ${esc(d.short)}</span></div>
+      <div class="qcard">
+        <h2 class="qtext">${esc(t.title)}</h2>
+        <p class="scenario">${esc(t.summary)}</p>
+        <ul class="tech-points">${(t.points || []).map((p) => `<li>${esc(p)}</li>`).join("")}</ul>
+        ${cmds ? `<div class="tech-cmds"><b>Commandes clés</b>${cmds}</div>` : ""}
+        ${t.ref ? `<a class="doc-link" href="${esc(t.ref)}" target="_blank" rel="noopener">📚 Documentation ↗</a>` : ""}
+      </div>
+      <div class="qnav">
+        <button class="btn ghost" data-tech-prev ${i === 0 ? "disabled" : ""}>← Précédent</button>
+        <button class="btn" data-tech-next ${i === orderedTechs.length - 1 ? "disabled" : ""}>Suivant →</button>
+      </div>`;
+    techIndexPos = i;
+  }
+  let techIndexPos = 0;
 
   // ============================ SESSION ============================
   let session = null;
@@ -220,6 +280,12 @@
   document.addEventListener("click", (e) => {
     const t = e.target;
     if (t.closest("[data-home]")) { session = null; renderHome(); return; }
+    if (t.closest("[data-techs]")) { renderTechIndex(); return; }
+    if (t.closest("[data-tech-index]")) { renderTechIndex(); return; }
+    const to = t.closest("[data-tech-open]");
+    if (to) { renderTechReader(parseInt(to.getAttribute("data-tech-open"), 10)); return; }
+    if (t.closest("[data-tech-prev]") && !t.closest("[data-tech-prev]").disabled) { renderTechReader(techIndexPos - 1); return; }
+    if (t.closest("[data-tech-next]") && !t.closest("[data-tech-next]").disabled) { renderTechReader(techIndexPos + 1); return; }
     if (t.closest("[data-prev]") && !t.closest("[data-prev]").disabled) { session.i--; renderQuestion(); return; }
     if (t.closest("[data-next]")) { if (session.i < session.list.length - 1) { session.i++; renderQuestion(); } else { session = null; renderHome(); } return; }
 

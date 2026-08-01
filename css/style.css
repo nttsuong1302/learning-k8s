@@ -125,6 +125,27 @@ a { color: #7fb0ff; }
 
 .qnav { display: flex; justify-content: space-between; margin-top: 16px; }
 
+/* ---------- Techniques ---------- */
+.btn.accent { background: #0e7490; border-color: #0e7490; }
+.btn.accent:hover { background: #0b6072; }
+.search { width: 100%; padding: 12px 14px; margin-bottom: 18px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; color: var(--text); font-size: .95rem; }
+.search:focus { outline: none; border-color: var(--primary); }
+.tech-group { margin-bottom: 22px; }
+.tech-group h3 { font-size: .95rem; color: var(--c); border-bottom: 1px solid var(--line); padding-bottom: 6px; margin: 0 0 12px; }
+.tech-group h3 span { color: var(--muted); font-weight: 400; }
+.tech-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
+.tech-card { text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 13px 15px; cursor: pointer; color: var(--text); display: flex; flex-direction: column; gap: 4px; transition: transform .1s, border-color .15s; }
+.tech-card:hover { transform: translateY(-2px); border-color: var(--primary); }
+.tc-title { font-weight: 600; }
+.tc-sum { font-size: .82rem; color: var(--muted); }
+
+.tech-points { margin: 4px 0 16px; padding-left: 20px; }
+.tech-points li { margin: 6px 0; line-height: 1.5; }
+.tech-cmds { background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; }
+.tech-cmds b { font-size: .85rem; color: var(--muted); }
+.cmd { background: #0b1120; border-radius: 8px; padding: 10px 12px; margin: 8px 0 0; overflow-x: auto; font-size: .82rem; color: #d7e3f4; white-space: pre; }
+.doc-link { display: inline-block; }
+
 @media (max-width: 560px) {
   .stats { gap: 18px; }
   .qcard { padding: 16px; }

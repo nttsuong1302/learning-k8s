@@ -89,60 +89,120 @@
   TH({ id: "cn-th-1", difficulty: "easy",
     q: "Quelle ressource personnalisée est au cœur de CloudNativePG ?",
     choices: ["Database", "Cluster", "PostgresServer", "PGDeployment"], correct: [1],
-    explain: "CloudNativePG gère les instances PostgreSQL via la ressource `Cluster` (un primaire + réplicas optionnels).",
+    why: [
+      "Faux : `Database` n'est pas la CRD centrale de CNPG.",
+      "Correct : la ressource `Cluster` décrit un primaire + réplicas optionnels.",
+      "Faux : `PostgresServer` n'existe pas dans CNPG.",
+      "Faux : `PGDeployment` n'existe pas ; CNPG n'utilise pas de Deployment pour les instances.",
+    ],
+    explain: "Tout se pilote de façon déclarative via la CRD `Cluster`.",
     ref: CN });
 
   TH({ id: "cn-th-2", difficulty: "easy",
     q: "Pour les ÉCRITURES, une application doit se connecter à quel Service d'un Cluster nommé `pg` ?",
     choices: ["pg-ro", "pg-r", "pg-rw", "pg-primary"], correct: [2],
-    explain: "Le Service `<cluster>-rw` pointe uniquement vers le primaire (lectures/écritures). `-ro` = réplicas (lecture), `-r` = n'importe quelle instance (lecture).",
+    why: [
+      "Faux : `-ro` route vers les réplicas en lecture seule.",
+      "Faux : `-r` cible n'importe quelle instance, en lecture.",
+      "Correct : `-rw` pointe uniquement vers le primaire (lectures/écritures).",
+      "Faux : `-primary` ne fait pas partie des Services créés par CNPG.",
+    ],
+    explain: "Écritures → -rw ; lectures → -ro (réplicas) ou -r (toute instance).",
     ref: CN + "architecture/" });
 
   TH({ id: "cn-th-3", difficulty: "medium",
     q: "CloudNativePG s'appuie-t-il sur des StatefulSets pour la persistance ?",
     choices: ["Oui, un StatefulSet par Cluster", "Non, il gère directement les PVC", "Oui, mais seulement pour le primaire", "Non, il utilise des emptyDir"], correct: [1],
-    explain: "La doc précise que CNPG n'utilise pas de StatefulSets et gère directement les PersistentVolumeClaims (PVC).",
+    why: [
+      "Faux : CNPG n'utilise pas de StatefulSet.",
+      "Correct : il gère directement les PersistentVolumeClaims (PVC).",
+      "Faux : aucun StatefulSet, même pour le primaire.",
+      "Faux : emptyDir est éphémère, inadapté à une base de données.",
+    ],
+    explain: "La gestion directe des PVC donne plus de contrôle sur les volumes.",
     ref: CN });
 
   TH({ id: "cn-th-4", difficulty: "medium",
     q: "Quelles sont les méthodes de bootstrap d'un Cluster ? (plusieurs réponses)",
     choices: ["initdb", "recovery", "pg_basebackup", "helm"], correct: [0, 1, 2],
-    explain: "spec.bootstrap accepte initdb (nouveau cluster), recovery (depuis backup, PITR) ou pg_basebackup (cloner un cluster existant). Une seule méthode par manifeste.",
+    why: [
+      "Correct : initdb crée un nouveau cluster vide (méthode par défaut).",
+      "Correct : recovery restaure depuis une sauvegarde (PITR possible).",
+      "Correct : pg_basebackup clone un cluster existant de même version majeure.",
+      "Faux : Helm est un gestionnaire de packages, pas une méthode de bootstrap CNPG.",
+    ],
+    explain: "spec.bootstrap accepte une seule de ces méthodes par manifeste.",
     ref: CN + "bootstrap/" });
 
   TH({ id: "cn-th-5", difficulty: "medium",
     q: "Pour une restauration à un instant T (PITR), que faut-il impérativement en plus de l'archive WAL ?",
     choices: ["Rien, le WAL suffit", "Une base backup (physical base backup)", "Un StatefulSet", "Un Service -ro"], correct: [1],
-    explain: "« Un WAL archive seul est inutile : sans base backup physique, on ne peut pas restaurer le cluster. »",
+    why: [
+      "Faux : « un WAL archive seul est inutile ».",
+      "Correct : sans base backup physique, on ne peut pas restaurer le cluster.",
+      "Faux : CNPG n'utilise pas de StatefulSet.",
+      "Faux : le Service -ro sert l'accès en lecture, pas la restauration.",
+    ],
+    explain: "WAL + base backup = PITR (RPO ≤ 5 min si WAL archivé).",
     ref: CN + "backup/" });
 
   TH({ id: "cn-th-6", difficulty: "easy",
     q: "Sur quel port l'exporter de métriques Prometheus de CloudNativePG écoute-t-il ?",
     choices: ["8080", "9090", "9187", "5432"], correct: [2],
-    explain: "CNPG expose les métriques Prometheus sur le port 9187.",
+    why: [
+      "Faux : 8080 n'est pas le port des métriques CNPG.",
+      "Faux : 9090 est le port du serveur Prometheus, pas de l'exporter CNPG.",
+      "Correct : CNPG expose les métriques sur 9187.",
+      "Faux : 5432 est le port PostgreSQL lui-même.",
+    ],
+    explain: "9187 est le port standard d'un postgres exporter.",
     ref: CN });
 
   TH({ id: "cn-th-7", difficulty: "hard",
     q: "Quelles ressources gèrent les sauvegardes dans CloudNativePG ?",
     choices: ["Backup et ScheduledBackup", "BackupJob et CronBackup", "Snapshot et Restore", "PGBackup uniquement"], correct: [0],
-    explain: "`Backup` déclenche une sauvegarde à la demande ; `ScheduledBackup` planifie via une expression cron à 6 champs (secondes incluses).",
+    why: [
+      "Correct : `Backup` (à la demande) et `ScheduledBackup` (planifiée).",
+      "Faux : `BackupJob`/`CronBackup` n'existent pas dans CNPG.",
+      "Faux : `Snapshot`/`Restore` ne sont pas ces CRD CNPG.",
+      "Faux : `PGBackup` n'existe pas.",
+    ],
+    explain: "ScheduledBackup utilise un cron à 6 champs (secondes incluses).",
     ref: CN + "backup/" });
 
   TH({ id: "cn-th-8", difficulty: "hard",
     q: "Quels modes de réplication synchrone PostgreSQL CloudNativePG supporte-t-il ?",
     choices: ["Basée sur le quorum et basée sur la priorité", "Uniquement asynchrone", "Basée sur le stockage (block-level)", "Multi-maître"], correct: [0],
-    explain: "CNPG supporte la réplication synchrone quorum-based et priority-based (réplication au niveau applicatif, pas au niveau stockage).",
+    why: [
+      "Correct : réplication synchrone quorum-based et priority-based.",
+      "Faux : CNPG supporte aussi le synchrone, pas seulement l'asynchrone.",
+      "Faux : la réplication est au niveau applicatif (PostgreSQL), pas au niveau stockage.",
+      "Faux : PostgreSQL/CNPG n'est pas multi-maître.",
+    ],
+    explain: "La réplication s'appuie sur le streaming natif de PostgreSQL.",
     ref: CN + "architecture/" });
 
   TH({ id: "cn-th-9", difficulty: "medium",
     q: "Sous quelle licence CloudNativePG est-il distribué ?",
     choices: ["GPLv3", "MIT", "Apache License 2.0", "BSD"], correct: [2],
-    explain: "CloudNativePG, créé à l'origine par EDB, est open-source sous licence Apache 2.0.",
+    why: [
+      "Faux : ce n'est pas du GPLv3.",
+      "Faux : ce n'est pas du MIT.",
+      "Correct : CNPG (créé par EDB) est sous Apache License 2.0.",
+      "Faux : ce n'est pas du BSD.",
+    ],
+    explain: "Projet open-source, aujourd'hui sous gouvernance CNCF (sandbox).",
     ref: CN });
 
   TH({ id: "cn-th-10", difficulty: "hard",
     q: "En cas d'indisponibilité du primaire au sein d'un même cluster K8s, que fait CloudNativePG ?",
     choices: ["Rien, intervention manuelle obligatoire", "Un failover automatique : le service -rw bascule vers une autre instance", "Il supprime le Cluster", "Il bascule en lecture seule définitivement"], correct: [1],
-    explain: "CNPG déclenche un failover et fait pointer le service `-rw` vers une autre instance. (En multi-cluster, la promotion reste manuelle.)",
+    why: [
+      "Faux : au sein d'un même cluster, le failover est automatique.",
+      "Correct : CNPG déclenche un failover et fait pointer -rw vers une autre instance.",
+      "Faux : il ne supprime jamais le Cluster.",
+      "Faux : il ne reste pas bloqué en lecture seule.",
+    ],
+    explain: "En multi-cluster (replica cluster), la promotion reste manuelle.",
     ref: CN + "architecture/" });
 })();

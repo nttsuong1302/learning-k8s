@@ -1,84 +1,94 @@
-# learning-k8s — Instructions du projet
+# learning-k8s — CKA Trainer
 
 ## 🎯 Vision
 
-Site web **interactif** pour apprendre **Kubernetes (K8s)** en s'appuyant sur la
-**méthode des loci** (« palais de la mémoire ») : on associe chaque notion à un
-**objet** placé dans une **grande maison**. En cliquant sur un objet, on ouvre
-une **popup en forme de slide de présentation** qui résume les points marquants
-de la notion.
+Site web **statique** de révision pour la certification **CKA** (Certified
+Kubernetes Administrator), à destination d'un profil **DBA** qui monte en
+compétence sur Kubernetes.
 
-L'objectif n'est **pas de résumer en supprimant** du contenu, mais d'**extraire
-les notions clés** de chaque page fournie par l'utilisateur, tout en conservant
-l'intégralité de l'information source.
+Objectif : une **grande banque de questions** (cible **1000**, puis +1000)
+couvrant **tous les sujets Kubernetes / CKA**, avec deux natures de questions :
 
-## 🏠 Métaphore : la maison japonaise
+1. **Théoriques** — QCM (choix simple ou multiple) avec explication + lien vers
+   la doc officielle.
+2. **Pratiques** — un **scénario** façon examen CKA, avec un **simulateur
+   `kubectl` intégré à côté de la question** : l'utilisateur tape ses commandes
+   dans un terminal simulé, puis **valide** que l'état du cluster atteint
+   l'objectif. Correction, indices et solution de référence fournis.
 
-L'illustration centrale est une **maison japonaise** dans le style des
-**couvertures de romans (light novels) japonais** : ambiance douce, lignes
-épurées, palette chaleureuse, éléments traditionnels (shoji, tatami, engawa,
-jardin, lanternes).
+Pas de backend : tout tourne côté navigateur (hébergeable sur GitHub Pages).
 
-Chaque **zone / objet** de la maison = un point d'ancrage mémoriel pour une
-notion. Cliquer sur l'objet ouvre la slide correspondante.
+## 🧭 Domaines CKA (pondération officielle)
 
-### Plan de la maison (structure pédagogique)
+| id | Domaine | Poids |
+|----|---------|-------|
+| `architecture` | Cluster Architecture, Installation & Configuration | 25 % |
+| `workloads` | Workloads & Scheduling | 15 % |
+| `networking` | Services & Networking | 20 % |
+| `storage` | Storage | 10 % |
+| `troubleshooting` | Troubleshooting | 30 % |
 
-| Niveau | Thème | Statut |
-|--------|-------|--------|
-| **RDC (genkan / entrée)** | **CloudNativePG** | 🔨 En cours — **on commence ici** |
-| **Étage 1** | Infrastructure K8s | ⏳ À venir |
-| **Étage 2** | CKA (Certified Kubernetes Administrator) | ⏳ À venir |
+## 🧩 Modèle de données (une question = un objet JS)
 
-> La **porte d'entrée** de la maison renvoie au dépôt :
-> https://github.com/nttsuong1302/learning-k8s.git
+Les questions vivent dans `data/*.js` et s'ajoutent à `window.CKA.questions`.
 
-## 🧩 Mécanique d'interaction
+**Théorie**
+```js
+{ id, domain, type:'theory', difficulty:'easy|medium|hard',
+  q, choices:[...], correct:[idx], explain, ref }
+```
 
-1. La maison est affichée comme une **scène cliquable** (image / SVG / zones interactives).
-2. Chaque **objet** est une zone cliquable associée à **une page de notions**.
-3. Au clic → **popup type slide de présentation** contenant :
-   - le **titre** de la notion,
-   - les **points marquants** (bullet points),
-   - éventuellement schéma / commande / exemple.
-4. La popup se ferme et on revient à la maison (navigation fluide, sans rechargement).
+**Pratique** (avec simulateur)
+```js
+{ id, domain, type:'practical', difficulty,
+  title, scenario, tasks:[...],
+  seed:(c)=>{...},                 // état initial supplémentaire (optionnel)
+  goals:[ { label, check:(c)=>bool } ],   // validation via l'état du cluster
+  hints:[...], solution:[...] }    // commandes kubectl de référence
+```
 
-## 📐 Principes de travail
+Le `check` interroge l'état du **cluster simulé** (`js/kube-sim.js`), qui expose
+`c.getObj(kind,name,ns)`, `c.list(kind,ns)`, `c.node(name)`, etc.
 
-- **Itératif** : on ne construit pas tout d'un coup. On suit les instructions de
-  l'utilisateur, **étape par étape**, niveau par niveau, objet par objet.
-- **On commence par le RDC = CloudNativePG.**
-- Pour chaque page fournie par l'utilisateur :
-  - extraire les **notions clés** sans rien retirer du fond,
-  - les mapper à un **objet** de la maison,
-  - produire la **slide** correspondante.
-- **Langue du contenu** : français (sauf termes techniques K8s conservés en anglais).
+## 🖥️ Simulateur kubectl (`js/kube-sim.js`)
+
+Cluster en mémoire + parseur d'un sous-ensemble de `kubectl` (get, describe,
+run, create, expose, scale, set image, delete, label, annotate, rollout,
+cordon/uncordon, drain, taint…). Sorties réalistes en mode tableau. Le
+simulateur n'exécute rien de réel : il fait évoluer un état d'objets et permet
+de **vérifier** les objectifs d'un scénario.
 
 ## 🛠️ Pile technique
 
-À confirmer avec l'utilisateur avant de coder. Proposition par défaut (simple,
-sans backend, facile à héberger sur GitHub Pages) :
+HTML + CSS + JavaScript **vanilla**. Données en fichiers JS (`window.CKA`).
+Progression stockée en `localStorage`.
 
-- **HTML + CSS + JavaScript** vanilla, ou un framework léger si demandé.
-- Scène de la maison en **SVG** (zones cliquables précises + animation douce).
-- Contenu des slides stocké en **données structurées** (ex. `data/*.json` ou JS)
-  pour séparer le contenu de la présentation.
-
-## 📁 Organisation suggérée
+## 📁 Organisation
 
 ```
-/
-├── index.html              # La maison + le moteur de popups
-├── assets/                 # Illustrations, SVG de la maison
-├── css/
-├── js/
-└── data/
-    └── cloudnativepg/      # Notions clés extraites, par objet/slide
+index.html
+css/style.css
+js/
+  kube-sim.js       # cluster simulé + parseur kubectl
+  app.js            # moteur : routeur, quiz, terminal, progression
+data/
+  domains.js        # métadonnées des 5 domaines
+  theory.js         # questions théoriques (QCM)
+  practical.js      # scénarios pratiques (+ objectifs de validation)
 ```
 
-## ✅ État d'avancement
+## 📐 Principes de travail
 
-- [x] Instructions du projet (ce fichier)
-- [ ] RDC — CloudNativePG : scène + objets + slides
-- [ ] Étage 1 — Infrastructure K8s
-- [ ] Étage 2 — CKA
+- **Itératif et par lots.** On construit d'abord le **v1** (moteur + simulateur
+  + premier lot de questions couvrant les 5 domaines), puis on grossit la banque
+  par **lots thématiques** jusqu'à 1000, en gardant qualité et non-doublons.
+- **Exactitude d'abord** : chaque question théorique a une explication et un
+  lien de doc ; chaque scénario a une solution de référence testée dans le
+  simulateur.
+- **Langue** : français (termes techniques K8s en anglais).
+
+## ✅ Avancement
+
+- [ ] v1 : moteur + simulateur + 1er lot de questions (5 domaines)
+- [ ] Montée à 1000 questions (lots thématiques)
+- [ ] Lot suivant (+1000)

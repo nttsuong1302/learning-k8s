@@ -1,45 +1,48 @@
-# learning-k8s · 学のいえ — La Maison Mémorielle
+# CKA Trainer
 
-Site web interactif pour apprendre **Kubernetes** par la **méthode des loci**
-(palais de la mémoire) : chaque notion est ancrée à un **objet** d'une **maison
-japonaise**. Un clic sur l'objet ouvre une **slide** résumant ses points clés.
+Site statique de révision pour la certification **CKA** (Certified Kubernetes
+Administrator). Banque de questions **théoriques** (QCM) et **pratiques** avec un
+**terminal `kubectl` simulé** intégré : on tape ses commandes puis on **vérifie**
+que l'état du cluster atteint l'objectif du scénario.
 
-> Voir [CLAUDE.md](CLAUDE.md) pour la vision complète et le plan pédagogique.
+Aucun backend — HTML/CSS/JS vanilla, hébergeable sur GitHub Pages.
 
-## 🏠 Plan de la maison
+> Vision, modèle de données et roadmap : voir [CLAUDE.md](CLAUDE.md).
 
-| Niveau | Thème | Statut |
-|--------|-------|--------|
-| RDC — la porte (関) | **CloudNativePG** | ✅ démarré |
-| Étage 1 | Infrastructure K8s | ⏳ à venir |
-| Étage 2 | CKA | ⏳ à venir |
+## 🧭 Domaines (pondération CKA)
+
+Architecture (25 %) · Workloads & Scheduling (15 %) · Services & Networking
+(20 %) · Storage (10 %) · Troubleshooting (30 %).
 
 ## 🚀 Lancer en local
 
-Pas de build : c'est du HTML/CSS/JS statique.
-
 ```bash
 python3 -m http.server 4173
-# puis ouvrir http://localhost:4173
+# http://localhost:4173
 ```
-
-## 🌐 Déploiement GitHub Pages
-
-Settings → Pages → Branch `main` / `root`. Le site est servi directement
-depuis `index.html`.
 
 ## 📁 Structure
 
 ```
-index.html              # La maison (SVG) + l'overlay des slides
-css/style.css           # Thème "couverture de light novel japonais"
-js/app.js               # Moteur : clic objet → slide
-data/cloudnativepg.js   # Notions clés extraites (RDC)
+index.html
+css/style.css
+js/
+  kube-sim.js     # cluster simulé + parseur kubectl
+  app.js          # moteur (accueil, quiz, terminal, progression)
+data/
+  domains.js      # 5 domaines CKA
+  theory.js       # QCM (explication + lien doc)
+  practical.js    # scénarios (objectifs validés par l'état du cluster)
 ```
 
-## ➕ Ajouter un objet / une slide
+## ➕ Ajouter des questions
 
-1. Ajouter un groupe SVG dans `index.html` avec
-   `class="hotspot" data-slide="<id>"`.
-2. Ajouter l'entrée correspondante `window.SLIDES["<id>"] = { … }`
-   dans le fichier de données du niveau.
+- **Théorie** : `window.CKA.questions.push({ type:'theory', domain, q, choices, correct:[i], explain, ref })`
+- **Pratique** : `push({ type:'practical', domain, title, scenario, tasks, seed, goals:[{label,check}], hints, solution })`
+
+La progression est stockée en `localStorage` (par navigateur).
+
+## 🗺️ Roadmap
+
+- **v1** : moteur + simulateur + 1er lot de questions (5 domaines). ✅
+- Montée progressive vers **1000** questions par lots thématiques, puis **+1000**.

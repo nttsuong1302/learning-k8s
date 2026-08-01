@@ -1,269 +1,244 @@
-// Moteur de la maison mémorielle.
-// - Zones cliquables du SVG principal (index.html) : .hotspot + data-slide
-//   (1 clic) et data-dblslide (double-clic).
-// - Le contenu vient de window.SLIDES (voir data/*.js).
-// - Une slide peut être :
-//     * simple  : { sections:[{heading, points}] }
-//     * scène   : { scene:"<blueprint>", hint, objects:[{id,object,label,en,points}], nav:[...] }
-//       => mini-scène : un décor avec des OBJETS numérotés ; chaque objet ouvre
-//          sa RUBRIQUE à droite (méthode des loci : numéro + objet).
-
+// CKA Trainer — moteur : accueil, sessions de quiz, terminal simulé, progression.
 (function () {
   "use strict";
 
-  const overlay = document.getElementById("overlay");
-  const slideEl = document.getElementById("slide");
-  const CIRCLED = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨"];
+  const $ = (sel, el) => (el || document).querySelector(sel);
+  const app = $("#app");
+  const BANK = window.CKA.questions;
+  const DOMAINS = window.CKA.domains;
+  const domainById = (id) => DOMAINS.find((d) => d.id === id);
 
-  function esc(s) {
-    return String(s).replace(/[&<>"]/g, (c) => ({
-      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;",
-    }[c]));
+  // ---------- progression (localStorage) ----------
+  const PKEY = "cka-progress-v1";
+  const loadProg = () => { try { return JSON.parse(localStorage.getItem(PKEY)) || {}; } catch (e) { return {}; } };
+  const saveProg = (p) => localStorage.setItem(PKEY, JSON.stringify(p));
+  let progress = loadProg();
+  function mark(id, correct) {
+    const cur = progress[id] || {};
+    progress[id] = { seen: true, correct: correct || cur.correct || false, ts: Date.now() };
+    saveProg(progress);
   }
 
-  // ---------- Petites primitives de dessin ----------
-  function badge(cx, cy, n) {
-    return `<circle cx="${cx}" cy="${cy}" r="11" fill="#fff" stroke="var(--accent)" stroke-width="2"/>` +
-           `<text x="${cx}" y="${cy + 4}" text-anchor="middle" font-size="13" font-weight="bold" fill="var(--accent)">${n}</text>`;
-  }
-  function shoe(x, y, c) {
-    return `<ellipse cx="${x}" cy="${y}" rx="12" ry="5.5" fill="${c}"/>` +
-           `<rect x="${x - 12}" y="${y - 9}" width="13" height="9" rx="4" fill="${c}"/>`;
-  }
-  function pairShoes(x, y, c) { return shoe(x, y, c) + shoe(x + 26, y, c); }
+  const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const shuffle = (a) => { const r = a.slice(); for (let i = r.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [r[i], r[j]] = [r[j], r[i]]; } return r; };
 
-  // ============ Blueprints de scènes (décor SVG + formes des objets) ============
-  const SCENE_BLUEPRINTS = {
-    // ---- LA PORTE ----
-    porte: {
-      viewBox: "0 0 240 380",
-      base: `
-        <rect x="34" y="34" width="172" height="320" rx="4" fill="var(--wood-dark)"/>
-        <rect x="46" y="74" width="148" height="276" fill="var(--wood)"/>
-        <line x1="120" y1="74" x2="120" y2="350" stroke="var(--wood-dark)" stroke-width="3"/>
-        <line x1="46" y1="150" x2="194" y2="150" stroke="var(--wood-dark)" stroke-width="2"/>
-        <line x1="46" y1="250" x2="194" y2="250" stroke="var(--wood-dark)" stroke-width="2"/>
-        <rect x="22" y="350" width="196" height="18" fill="#46563f"/>`,
-      shapes: {
-        presentation: (n) => `
-          <rect x="40" y="40" width="160" height="34" rx="3" fill="var(--accent)"/>
-          <text x="120" y="65" text-anchor="middle" font-size="22" fill="var(--paper)" font-family="serif">関</text>
-          ${badge(52, 44, n)}`,
-        k8s: (n) => `
-          <line x1="80" y1="78" x2="80" y2="94" stroke="var(--wood-dark)" stroke-width="2"/>
-          <ellipse cx="80" cy="112" rx="16" ry="20" fill="var(--lantern)"/>
-          <ellipse cx="80" cy="112" rx="16" ry="20" fill="var(--lantern-glow)" opacity="0.3"/>
-          <line x1="66" y1="112" x2="94" y2="112" stroke="var(--wood-dark)" stroke-width="1.5"/>
-          ${badge(63, 100, n)}`,
-        images: (n) => `
-          <rect x="146" y="300" width="44" height="42" fill="var(--wood)" stroke="var(--wood-dark)" stroke-width="2"/>
-          <line x1="146" y1="321" x2="190" y2="321" stroke="var(--wood-dark)" stroke-width="2"/>
-          <line x1="168" y1="300" x2="168" y2="342" stroke="var(--wood-dark)" stroke-width="2"/>
-          ${badge(150, 300, n)}`,
-        features: (n) => `
-          <rect x="100" y="168" width="40" height="50" rx="3" fill="var(--wood-dark)"/>
-          <circle cx="120" cy="200" r="11" fill="none" stroke="var(--lantern-glow)" stroke-width="3"/>
-          <circle cx="120" cy="186" r="4" fill="var(--lantern-glow)"/>
-          ${badge(101, 168, n)}`,
-        guide: (n) => `
-          <rect x="150" y="92" width="42" height="30" rx="2" fill="var(--paper)" stroke="var(--wood-dark)" stroke-width="2"/>
-          <line x1="156" y1="102" x2="186" y2="102" stroke="var(--wood)" stroke-width="2"/>
-          <line x1="156" y1="110" x2="180" y2="110" stroke="var(--wood)" stroke-width="2"/>
-          ${badge(151, 92, n)}`,
-      },
-    },
+  // ============================ ACCUEIL ============================
+  function renderHome() {
+    const total = BANK.length;
+    const answered = Object.keys(progress).filter((id) => progress[id].seen).length;
+    const correct = Object.keys(progress).filter((id) => progress[id].correct).length;
 
-    // ---- L'ENTRÉE / GENKAN ----
-    entree: {
-      viewBox: "0 0 240 380",
-      base: `
-        <!-- mur du fond + plancher surélevé + tataki (sol bas du genkan) -->
-        <rect x="0" y="0" width="240" height="300" fill="var(--paper)"/>
-        <rect x="0" y="300" width="240" height="80" fill="#6e5a4a"/>
-        <line x1="0" y1="300" x2="240" y2="300" stroke="var(--wood-dark)" stroke-width="3"/>
-        <!-- getabako (meuble à chaussures) -->
-        <rect x="118" y="78" width="104" height="216" rx="3" fill="var(--wood)" stroke="var(--wood-dark)" stroke-width="3"/>
-        <line x1="118" y1="150" x2="222" y2="150" stroke="var(--wood-dark)" stroke-width="2.5"/>
-        <line x1="118" y1="222" x2="222" y2="222" stroke="var(--wood-dark)" stroke-width="2.5"/>
-        <rect x="118" y="294" width="104" height="10" fill="var(--wood-dark)"/>`,
-      shapes: {
-        // paillasson de bienvenue, posé sur le tataki
-        tapis: (n) => `
-          <rect x="26" y="320" width="118" height="40" rx="5" fill="var(--accent)"/>
-          <rect x="32" y="326" width="106" height="28" rx="3" fill="none" stroke="var(--paper)" stroke-width="1.5" opacity="0.7"/>
-          <text x="85" y="346" text-anchor="middle" font-size="15" fill="var(--paper)" font-family="serif">ようこそ</text>
-          ${badge(30, 320, n)}`,
-        // chaussures — étagère du haut
-        term_k8s: (n) => `${pairShoes(150, 138, "var(--roof-light)")}${badge(126, 92, n)}`,
-        // chaussures — étagère du milieu
-        term_pg: (n) => `${pairShoes(150, 210, "var(--wood-dark)")}${badge(126, 164, n)}`,
-        // chaussures — étagère du bas
-        term_cloud: (n) => `${pairShoes(150, 282, "#8d8270")}${badge(126, 236, n)}`,
-        // pantoufles, prêtes à enfiler sur le plancher surélevé
-        suite: (n) => `
-          <ellipse cx="56" cy="250" rx="20" ry="9" fill="var(--lantern)"/>
-          <ellipse cx="56" cy="247" rx="13" ry="5" fill="var(--lantern-glow)"/>
-          <ellipse cx="92" cy="262" rx="20" ry="9" fill="var(--lantern)"/>
-          <ellipse cx="92" cy="259" rx="13" ry="5" fill="var(--lantern-glow)"/>
-          ${badge(40, 238, n)}`,
-      },
-    },
-  };
-
-  function buildSceneSVG(sceneName, objects) {
-    const bp = SCENE_BLUEPRINTS[sceneName];
-    if (!bp) return "";
-    const objsSVG = objects.map((o, i) => {
-      const shape = bp.shapes[o.id] ? bp.shapes[o.id](i + 1) : "";
-      return `<g class="door-obj" data-rid="${esc(o.id)}" role="button" tabindex="0"
-                 aria-label="${esc((i + 1) + ". " + o.object + " — " + o.label)}">${shape}</g>`;
+    const cards = DOMAINS.map((d) => {
+      const qs = BANK.filter((q) => q.domain === d.id);
+      const done = qs.filter((q) => progress[q.id] && progress[q.id].correct).length;
+      const pct = qs.length ? Math.round((done / qs.length) * 100) : 0;
+      return `
+        <button class="domain-card" data-domain="${d.id}" style="--c:${d.color}">
+          <div class="dc-top"><span class="dc-icon">${d.icon}</span><span class="dc-weight">${d.weight}%</span></div>
+          <h3>${esc(d.short)}</h3>
+          <p class="dc-name">${esc(d.name)}</p>
+          <div class="dc-bar"><span style="width:${pct}%"></span></div>
+          <div class="dc-meta">${done}/${qs.length} réussies · ${qs.length} questions</div>
+        </button>`;
     }).join("");
-    return `<svg viewBox="${bp.viewBox}" xmlns="http://www.w3.org/2000/svg" class="door-svg">${bp.base}${objsSVG}</svg>`;
+
+    app.innerHTML = `
+      <section class="hero">
+        <h1>CKA Trainer <span class="ver">v1</span></h1>
+        <p class="sub">Révision de la certification <strong>Certified Kubernetes Administrator</strong> — questions théoriques &amp; pratiques avec terminal <code>kubectl</code> simulé.</p>
+        <div class="stats">
+          <div><b>${total}</b><span>questions</span></div>
+          <div><b>${answered}</b><span>abordées</span></div>
+          <div><b>${correct}</b><span>réussies</span></div>
+        </div>
+        <div class="quick">
+          <button class="btn primary" data-start="all">▶ Tout réviser (${total})</button>
+          <button class="btn" data-start="theory">📖 Théorie (${BANK.filter((q) => q.type === "theory").length})</button>
+          <button class="btn" data-start="practical">🧪 Pratique (${BANK.filter((q) => q.type === "practical").length})</button>
+          <button class="btn" data-start="exam">🎲 Mode examen (aléatoire)</button>
+          <button class="btn ghost" data-reset>↺ Réinitialiser la progression</button>
+        </div>
+      </section>
+      <h2 class="section-title">Domaines CKA</h2>
+      <div class="domain-grid">${cards}</div>
+      <footer class="foot">Banque v1 · on grossit ensuite par lots jusqu'à 1000 questions. Progression enregistrée localement (ce navigateur).</footer>`;
   }
 
-  // ---------- Rendu ----------
-  function footerHTML(data) {
-    return data.source ? `
-      <div class="slide-footer">
-        <span class="src-label">Source :</span>
-        <a href="${esc(data.source)}" target="_blank" rel="noopener">${esc(data.sourceLabel || data.source)} ↗</a>
-      </div>` : "";
+  // ============================ SESSION ============================
+  let session = null;
+
+  function startSession(title, questions) {
+    if (!questions.length) { alert("Aucune question dans cette sélection."); return; }
+    session = { title, list: questions, i: 0, clusters: {}, terms: {} };
+    renderQuestion();
   }
 
-  function sceneFooterHTML(data) {
-    const src = data.source
-      ? `<span class="footer-src"><span class="src-label">Source :</span>
-           <a href="${esc(data.source)}" target="_blank" rel="noopener">${esc(data.sourceLabel || data.source)} ↗</a></span>`
-      : `<span></span>`;
-    const nav = (data.nav || []).map((n) => n.scene
-      ? `<button class="nav-btn" data-scene="${esc(n.scene)}">${esc(n.label)}</button>`
-      : `<button class="nav-btn" data-go="${esc(n.slide)}">${esc(n.label)}</button>`).join("");
-    return `<div class="slide-footer scene-footer">${src}<span class="footer-nav">${nav}</span></div>`;
+  function progressBarHTML() {
+    const n = session.list.length, i = session.i;
+    return `<div class="qbar"><span style="width:${((i) / n) * 100}%"></span></div>`;
   }
 
-  function renderRubrique(obj, index) {
-    const en = obj.en
-      ? `<p class="rub-en"><span>en.</span> ${esc(obj.en)} <em>— explication en français ci-dessous</em></p>`
-      : "";
+  function renderQuestion() {
+    const q = session.list[session.i];
+    const d = domainById(q.domain);
+    const head = `
+      <div class="qtop">
+        <button class="btn ghost sm" data-home>← Accueil</button>
+        <div class="qtitle">${session.title}</div>
+        <div class="qcount">${session.i + 1} / ${session.list.length}</div>
+      </div>
+      ${progressBarHTML()}
+      <div class="qtags">
+        <span class="tag" style="--c:${d.color}">${d.icon} ${esc(d.short)}</span>
+        <span class="tag type-${q.type}">${q.type === "theory" ? "Théorie" : "Pratique"}</span>
+        <span class="tag diff-${q.difficulty}">${q.difficulty}</span>
+        ${progress[q.id] && progress[q.id].correct ? '<span class="tag ok">✓ réussie</span>' : ""}
+      </div>`;
+
+    const body = q.type === "theory" ? theoryHTML(q) : practicalHTML(q);
+    const nav = `
+      <div class="qnav">
+        <button class="btn ghost" data-prev ${session.i === 0 ? "disabled" : ""}>← Précédent</button>
+        <button class="btn" data-next>${session.i === session.list.length - 1 ? "Terminer" : "Suivant →"}</button>
+      </div>`;
+
+    app.innerHTML = `<section class="quiz">${head}<div class="qcard">${body}</div>${nav}</section>`;
+    if (q.type === "theory") wireTheory(q);
+    else wirePractical(q);
+  }
+
+  // ---------- THÉORIE ----------
+  function theoryHTML(q) {
+    const multi = q.correct.length > 1;
+    const opts = q.choices.map((ch, i) =>
+      `<label class="opt" data-i="${i}"><input type="${multi ? "checkbox" : "radio"}" name="opt"> <span>${esc(ch)}</span></label>`).join("");
     return `
-      <div class="rub-obj">${CIRCLED[index] || (index + 1)} ${esc(obj.object)}</div>
-      <h3 class="rub-title">${esc(obj.label)}</h3>
-      ${en}
-      <ul class="rub-points">${obj.points.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>`;
+      <h2 class="qtext">${esc(q.q)}</h2>
+      ${multi ? '<p class="muted">Plusieurs bonnes réponses possibles.</p>' : ""}
+      <div class="opts">${opts}</div>
+      <div class="qactions"><button class="btn primary" data-check>Valider</button></div>
+      <div class="feedback" hidden></div>`;
   }
 
-  function renderSceneSlide(data) {
-    const objs = data.objects;
-    const tabs = objs.map((o, i) =>
-      `<button class="rub-tab" data-rid="${esc(o.id)}"><span class="tab-num">${i + 1}</span>${esc(o.label)}</button>`).join("");
+  function wireTheory(q) {
+    const card = $(".qcard");
+    $("[data-check]", card).addEventListener("click", () => {
+      const chosen = [...card.querySelectorAll(".opt input")].map((inp, i) => inp.checked ? i : -1).filter((i) => i >= 0);
+      if (!chosen.length) return;
+      const ok = chosen.length === q.correct.length && chosen.every((i) => q.correct.includes(i));
+      card.querySelectorAll(".opt").forEach((el, i) => {
+        el.classList.toggle("correct", q.correct.includes(i));
+        el.classList.toggle("wrong", chosen.includes(i) && !q.correct.includes(i));
+      });
+      const fb = $(".feedback", card);
+      fb.hidden = false;
+      fb.className = "feedback " + (ok ? "good" : "bad");
+      fb.innerHTML = `<b>${ok ? "✓ Correct" : "✗ Incorrect"}</b><p>${esc(q.explain)}</p>${q.ref ? `<a href="${esc(q.ref)}" target="_blank" rel="noopener">📚 Documentation ↗</a>` : ""}`;
+      mark(q.id, ok);
+    });
+  }
 
-    slideEl.innerHTML = `
-      <button class="close-btn" aria-label="Fermer" data-close>×</button>
-      <div class="slide-header">
-        <div class="kicker">RDC · CloudNativePG</div>
-        <h2>${esc(data.title)}</h2>
-        ${data.subtitle ? `<p class="subtitle">${esc(data.subtitle)}</p>` : ""}
+  // ---------- PRATIQUE (terminal simulé) ----------
+  function getCluster(q) {
+    if (!session.clusters[q.id]) session.clusters[q.id] = window.KubeSim.createCluster(q.seed);
+    return session.clusters[q.id];
+  }
+
+  function practicalHTML(q) {
+    return `
+      <h2 class="qtext">${esc(q.title)}</h2>
+      <p class="scenario">${esc(q.scenario)}</p>
+      <div class="tasks"><b>Tâches</b><ol>${q.tasks.map((t) => `<li>${esc(t)}</li>`).join("")}</ol></div>
+      <div class="term">
+        <div class="term-head"><span class="dots"><i></i><i></i><i></i></span> terminal — cluster simulé</div>
+        <pre class="term-out" id="termOut"></pre>
+        <div class="term-in"><span class="prompt">$</span><input id="termIn" autocomplete="off" spellcheck="false" placeholder="kubectl get pods"></div>
       </div>
-      <div class="door-scene">
-        <div class="door-left">
-          ${buildSceneSVG(data.scene, objs)}
-          <p class="door-hint">${esc(data.hint || "Clique un objet.")}</p>
-        </div>
-        <div class="door-right">
-          <div class="rub-tabs">${tabs}</div>
-          <div class="rubrique" id="rubrique"></div>
-        </div>
+      <div class="qactions">
+        <button class="btn primary" data-verify>✓ Vérifier</button>
+        <button class="btn ghost" data-hints>💡 Indices</button>
+        <button class="btn ghost" data-solution>🔑 Solution</button>
+        <button class="btn ghost" data-resetsim>↺ Réinitialiser le cluster</button>
       </div>
-      ${sceneFooterHTML(data)}`;
-
-    selectRubrique(data, objs[0].id);
+      <div class="goals" hidden></div>
+      <div class="aside" hidden></div>`;
   }
 
-  function selectRubrique(data, rid) {
-    const objs = data.objects;
-    const idx = objs.findIndex((o) => o.id === rid);
-    if (idx < 0) return;
-    const rub = document.getElementById("rubrique");
-    if (rub) rub.innerHTML = renderRubrique(objs[idx], idx);
-    slideEl.querySelectorAll(".door-obj").forEach((g) =>
-      g.classList.toggle("selected", g.getAttribute("data-rid") === rid));
-    slideEl.querySelectorAll(".rub-tab").forEach((b) =>
-      b.classList.toggle("active", b.getAttribute("data-rid") === rid));
+  function wirePractical(q) {
+    const card = $(".qcard");
+    const out = $("#termOut", card), inp = $("#termIn", card);
+    const cluster = getCluster(q);
+    const hist = session.terms[q.id] || (session.terms[q.id] = []);
+    let hIdx = hist.length;
+
+    out.textContent = "# Tape tes commandes kubectl ci-dessous. 'clear' efface l'écran.\n";
+    const print = (t) => { out.textContent += t + "\n"; out.scrollTop = out.scrollHeight; };
+
+    inp.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        const line = inp.value; inp.value = "";
+        print("$ " + line);
+        const res = window.KubeSim.run(cluster, line);
+        if (res === "\x00CLEAR") out.textContent = "";
+        else if (res) print(res);
+        if (line.trim()) { hist.push(line); hIdx = hist.length; }
+      } else if (e.key === "ArrowUp") { if (hIdx > 0) { hIdx--; inp.value = hist[hIdx] || ""; } e.preventDefault(); }
+      else if (e.key === "ArrowDown") { if (hIdx < hist.length) { hIdx++; inp.value = hist[hIdx] || ""; } e.preventDefault(); }
+    });
+    setTimeout(() => inp.focus(), 30);
+
+    $("[data-verify]", card).addEventListener("click", () => {
+      const results = q.goals.map((g) => ({ label: g.label, ok: !!safeCheck(g.check, cluster) }));
+      const allOk = results.every((r) => r.ok);
+      const box = $(".goals", card);
+      box.hidden = false;
+      box.className = "goals " + (allOk ? "good" : "bad");
+      box.innerHTML = `<b>${allOk ? "✓ Objectifs atteints !" : "Objectifs"}</b><ul>` +
+        results.map((r) => `<li class="${r.ok ? "ok" : "ko"}">${r.ok ? "✓" : "✗"} ${esc(r.label)}</li>`).join("") + "</ul>";
+      mark(q.id, allOk);
+    });
+    $("[data-hints]", card).addEventListener("click", () => showAside(card, "Indices", `<ul>${q.hints.map((h) => `<li>${esc(h)}</li>`).join("")}</ul>`));
+    $("[data-solution]", card).addEventListener("click", () => showAside(card, "Solution de référence", `<pre class="sol">${q.solution.map(esc).join("\n")}</pre><button class="btn sm" data-runsol>▶ Exécuter dans le terminal</button>`, () => {
+      const btn = $("[data-runsol]", card);
+      if (btn) btn.addEventListener("click", () => { q.solution.forEach((l) => { print("$ " + l); const r = window.KubeSim.run(cluster, l); if (r && r !== "\x00CLEAR") print(r); }); });
+    }));
+    $("[data-resetsim]", card).addEventListener("click", () => {
+      delete session.clusters[q.id]; session.terms[q.id] = [];
+      renderQuestion();
+    });
   }
 
-  function renderSimpleSlide(data) {
-    const sections = (data.sections || []).map((sec) => `
-      <div class="slide-section">
-        <h3>${esc(sec.heading)}</h3>
-        <ul>${sec.points.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>
-      </div>`).join("");
-    slideEl.innerHTML = `
-      <button class="close-btn" aria-label="Fermer" data-close>×</button>
-      <div class="slide-header">
-        <div class="kicker">RDC · CloudNativePG</div>
-        <h2>${esc(data.title)}</h2>
-        ${data.subtitle ? `<p class="subtitle">${esc(data.subtitle)}</p>` : ""}
-      </div>
-      <div class="slide-body">${sections}</div>
-      ${footerHTML(data)}`;
+  function safeCheck(fn, c) { try { return fn(c); } catch (e) { return false; } }
+  function showAside(card, title, html, after) {
+    const a = $(".aside", card);
+    a.hidden = false;
+    a.innerHTML = `<b>${esc(title)}</b>${html}`;
+    if (after) after();
   }
 
-  let current = null;
-
-  function open(id) {
-    const data = (window.SLIDES || {})[id];
-    if (!data) { console.warn("Aucune slide pour :", id); return; }
-    current = data;
-    if (data.scene) renderSceneSlide(data);
-    else renderSimpleSlide(data);
-    overlay.classList.add("open");
-    slideEl.scrollTop = 0;
-    const closeBtn = slideEl.querySelector("[data-close]");
-    if (closeBtn) closeBtn.focus();
-  }
-
-  function close() { overlay.classList.remove("open"); current = null; }
-
-  // Changement de scène plein écran (extérieur <-> intérieur)
-  function showScene(name) {
-    document.querySelectorAll(".scene-view").forEach((v) =>
-      v.classList.toggle("active", v.id === "view-" + name));
-    const hint = document.getElementById("stage-hint");
-    if (hint) {
-      hint.textContent = name === "interior"
-        ? "Clique le paillasson ou le meuble à chaussures pour ouvrir sa fiche"
-        : "Clique sur la porte pour ouvrir sa fiche";
-    }
-  }
-
-  // ---------- Interactions ----------
+  // ============================ ÉVÉNEMENTS ============================
   document.addEventListener("click", (e) => {
-    const hot = e.target.closest(".hotspot[data-slide]");
-    if (hot) { open(hot.getAttribute("data-slide")); return; }
+    const t = e.target;
+    if (t.closest("[data-home]")) { session = null; renderHome(); return; }
+    if (t.closest("[data-prev]") && !t.closest("[data-prev]").disabled) { session.i--; renderQuestion(); return; }
+    if (t.closest("[data-next]")) { if (session.i < session.list.length - 1) { session.i++; renderQuestion(); } else { session = null; renderHome(); } return; }
 
-    const sc = e.target.closest("[data-scene]");
-    if (sc) { close(); showScene(sc.getAttribute("data-scene")); return; }
+    const card = t.closest(".domain-card");
+    if (card) { const id = card.getAttribute("data-domain"); const d = domainById(id); startSession(d.short, BANK.filter((q) => q.domain === id)); return; }
 
-    const go = e.target.closest("[data-go]");
-    if (go) { open(go.getAttribute("data-go")); return; }
-
-    const obj = e.target.closest(".door-obj[data-rid], .rub-tab[data-rid]");
-    if (obj && current && current.scene) { selectRubrique(current, obj.getAttribute("data-rid")); return; }
-
-    if (e.target.closest("[data-close]")) { close(); return; }
-    if (e.target === overlay) close();
-  });
-
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") { close(); return; }
-    if (e.key === "Enter" || e.key === " ") {
-      const a = document.activeElement;
-      if (a && a.classList && a.classList.contains("hotspot")) {
-        e.preventDefault(); open(a.getAttribute("data-slide")); return;
-      }
-      if (a && a.classList && a.classList.contains("door-obj") && current && current.scene) {
-        e.preventDefault(); selectRubrique(current, a.getAttribute("data-rid"));
-      }
+    const start = t.closest("[data-start]");
+    if (start) {
+      const mode = start.getAttribute("data-start");
+      if (mode === "all") startSession("Tout réviser", BANK.slice());
+      else if (mode === "theory") startSession("Théorie", BANK.filter((q) => q.type === "theory"));
+      else if (mode === "practical") startSession("Pratique", BANK.filter((q) => q.type === "practical"));
+      else if (mode === "exam") startSession("Mode examen", shuffle(BANK));
+      return;
+    }
+    if (t.closest("[data-reset]")) {
+      if (confirm("Réinitialiser toute la progression ?")) { progress = {}; saveProg(progress); renderHome(); }
     }
   });
+
+  renderHome();
 })();

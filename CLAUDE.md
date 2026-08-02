@@ -110,6 +110,7 @@ data/
   theory.js           # QCM lot 1 (avec why[] par option)
   theory2.js          # QCM lot 2 (+100)
   theory3.js          # QCM lot 3 (+50) — sourcé par scan de kubernetes.io, bilingue
+  theory4.js          # QCM lot 4 (+50) — scan kubernetes.io (RBAC, etcd, probes, QoS…), bilingue
   practical.js        # scénarios pratiques (+ objectifs de validation)
   techniques.js       # catalogue de techniques à parcourir
   cnpg.js             # techniques + QCM CloudNativePG (doc officielle)

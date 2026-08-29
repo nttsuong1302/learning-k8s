@@ -113,6 +113,7 @@ data/
   theory4.js          # QCM lot 4 (+50) — scan kubernetes.io (RBAC, etcd, probes, QoS…), bilingue
   theory5.js          # QCM lot 5 (+50) — scan kubernetes.io (PSA, admission, HPA, dual-stack, healthz…), bilingue
   theory6.js          # QCM lot 6 (+50) — scan kubernetes.io (AdmissionPolicy/CEL, API Priority&Fairness, Secrets/ConfigMap, subPath, eviction, rollout…), bilingue
+  theory7.js          # QCM lot 7 (+50) — scan kubernetes.io (kubeadm phases, leader election, NodeLocal DNSCache, Ingress TLS, CSI capacity tracking, node-pressure eviction…), bilingue
   practical.js        # scénarios pratiques (+ objectifs de validation)
   techniques.js       # catalogue de techniques à parcourir
   cnpg.js             # techniques + QCM CloudNativePG (doc officielle)

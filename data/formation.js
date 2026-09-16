@@ -182,6 +182,31 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-native-routing",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "Native routing vs overlay (VXLAN/IPIP)",
+  "lead": "Deux façons pour un CNI de faire circuler le trafic Pod-à-Pod entre nœuds — Kubernetes ne tranche pas, c'est le choix (et le mérite) de la solution réseau.",
+  "body": [
+    "« Native routing » n'est pas un terme du projet Kubernetes lui-même — kubernetes.io délègue entièrement le *comment* router les paquets aux plugins CNI (voir note « Solution réseau (CNI) »). C'est un terme d'usage courant en formation pour désigner ce que Calico (le CNI le plus documenté sur le sujet) appelle officiellement « running without network overlay/encapsulation ».",
+    "Overlay (encapsulation) — le trafic entre Pods est encapsulé (VXLAN, IP-in-IP) pour transiter par-dessus le réseau physique sans que celui-ci connaisse les IP des Pods. Native routing / sans overlay — au contraire, « the underlying network acts as an L3 routing » : le réseau physique route directement les IP des Pods, sans encapsulation."
+  ],
+  "points": [
+    "Comment ça marche (BGP) — Calico « peer[s] with the physical network (typically top of rack routers) to exchange routes », rendant les IP des Pods directement routables sur l'infra réseau.",
+    "Deux façons d'y arriver — BGP peering avec le réseau physique (routeurs top-of-rack), ou une adjacence L2 (même réseau de niveau 2) avec BGP peering seulement entre les nœuds.",
+    "Sur le cloud — l'équivalent « natif » s'appuie sur le réseau natif du fournisseur (AWS VPC, Azure VNet, Google Cloud Alias IPs) plutôt que du BGP classique.",
+    "Pourquoi c'est recommandé par défaut — « we recommend running Calico without network overlay/encapsulation. This gives you the highest performance and simplest network » : pas d'en-têtes d'encapsulation supplémentaires, donc moins d'overhead.",
+    "Quand l'overlay redevient utile — quand le réseau sous-jacent ne peut pas connaître les IP des workloads (ex. AWS entre plusieurs VPC/subnets) : Calico peut alors n'encapsuler que le trafic inter-VPC et router nativement à l'intérieur de chaque VPC/subnet (« cross-subnet » encapsulation)."
+  ],
+  "note": [
+    "À relier à la note « Solution réseau (CNI) » : ceci est un exemple concret de ce que « la solution réseau implémente le modèle imposé par Kubernetes » veut dire en pratique — le choix overlay vs native routing est une décision du CNI (ici Calico), pas de Kubernetes."
+  ],
+  "refs": [
+    "https://docs.tigera.io/calico/latest/networking/determine-best-networking",
+    "https://docs.tigera.io/calico/latest/networking/configuring/vxlan-ipip"
+  ]
+},
+{
   "id": "f-j1-orchestrateur",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Fondamentaux",

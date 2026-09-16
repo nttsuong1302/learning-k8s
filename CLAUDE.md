@@ -69,7 +69,9 @@ kubernetes.io / cloudnative-pg.io, à celles déjà validées par l'utilisateur 
 **kubespray.io** / **github.com/kubernetes-sigs/kubespray**, **kubernetes-csi.github.io**
 (doc officielle du SIG-Storage pour le développement/déploiement des CSI drivers), **sonobuoy.io** et
 **github.com/cncf/k8s-conformance** (doc officielle du programme de certification CNCF Certified Kubernetes),
-**cri-o.io** / **github.com/cri-o/cri-o** (projet CNCF graduated, doc officielle du runtime CRI-O).
+**cri-o.io** / **github.com/cri-o/cri-o** (projet CNCF graduated, doc officielle du runtime CRI-O),
+**docs.tigera.io/calico** (doc officielle du plugin CNI Calico, référence pour les notions génériques
+de CNI comme overlay vs native routing).
 Les mêmes principes de fidélité
 s'appliquent : ne rien inventer, chaque fiche porte ses `refs` vers la doc officielle du projet
 concerné.

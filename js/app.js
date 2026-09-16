@@ -158,6 +158,21 @@
         </button>`;
     }).join("");
 
+    // ---- Recherche inline (directement sur l'accueil) ----
+    const f = searchFilter.trim();
+    searchMatches = [];
+    let resultsSection = `<h2 class="section-title">Domaines CKA</h2><div class="domain-grid">${cards}</div>`;
+    if (f.length >= 2) {
+      const fl = f.toLowerCase();
+      searchMatches = BANK.filter((q) => questionSearchText(q).toLowerCase().includes(fl));
+      resultsSection = searchMatches.length
+        ? `<h2 class="section-title">🔍 ${searchMatches.length} résultat${searchMatches.length > 1 ? "s" : ""} pour « ${esc(f)} »</h2>
+           <div class="search-results">${searchMatches.map((q, i) => searchCardHTML(q, i, f)).join("")}</div>`
+        : `<h2 class="section-title">🔍 Recherche</h2><p class="muted">Aucune question ne correspond à « ${esc(f)} ».</p>`;
+    } else if (f.length === 1) {
+      resultsSection = `<h2 class="section-title">🔍 Recherche</h2><p class="muted">Tape au moins 2 caractères…</p>`;
+    }
+
     app.innerHTML = `
       <section class="hero">
         <h1>CKA Trainer <span class="ver">v1</span></h1>
@@ -168,20 +183,22 @@
           <div><b>${correct}</b><span>réussies</span></div>
         </div>
         <div class="hero-lang">${langSwitchHTML()} <span class="muted">langue des questions (EN = conditions d'examen)</span></div>
+        <input class="search" id="homeSearch" placeholder="🔍 Rechercher une question (Pod, RBAC, PVC, drain, etcd…)" value="${esc(searchFilter)}">
         <div class="quick">
           <button class="btn primary" data-start="all">▶ Tout réviser (${total})</button>
           <button class="btn" data-start="theory">📖 Théorie (${BANK.filter((q) => q.type === "theory").length})</button>
           <button class="btn" data-start="practical">🧪 Pratique (${BANK.filter((q) => q.type === "practical").length})</button>
           <button class="btn" data-start="exam">🎲 Mode examen (aléatoire)</button>
           <button class="btn accent" data-techs>🧭 Parcourir les techniques (${TECHS.length})</button>
-          <button class="btn" data-search>🔍 Rechercher une question</button>
           <button class="btn" data-stats>📊 Mes résultats</button>
           <button class="btn ghost" data-reset>↺ Réinitialiser la progression</button>
         </div>
       </section>
-      <h2 class="section-title">Domaines CKA</h2>
-      <div class="domain-grid">${cards}</div>
+      ${resultsSection}
       <footer class="foot">Banque v1 · on grossit ensuite par lots jusqu'à 1000 questions. Progression enregistrée localement (ce navigateur).</footer>`;
+
+    const s = $("#homeSearch");
+    s.addEventListener("input", () => { searchFilter = s.value; const pos = s.selectionStart; renderHome(); const n = $("#homeSearch"); n.focus(); n.setSelectionRange(pos, pos); });
   }
 
   // ============================ RÉSULTATS ============================
@@ -293,31 +310,6 @@
       </span>
       <span class="tc-sum">${highlightHTML(snippet, f)}</span>
     </button>`;
-  }
-  function renderSearch() {
-    const f = searchFilter.trim();
-    let resultsHTML = `<p class="muted">Tape au moins 2 caractères pour chercher parmi les ${BANK.length} questions (objet Kubernetes, commande, domaine…).</p>`;
-    searchMatches = [];
-    if (f.length >= 2) {
-      const fl = f.toLowerCase();
-      searchMatches = BANK.filter((q) => questionSearchText(q).toLowerCase().includes(fl));
-      resultsHTML = searchMatches.length
-        ? `<p class="muted" style="margin:0 0 12px">${searchMatches.length} résultat${searchMatches.length > 1 ? "s" : ""}</p>
-           <div class="search-results">${searchMatches.map((q, i) => searchCardHTML(q, i, f)).join("")}</div>`
-        : `<p class="muted">Aucune question ne correspond à « ${esc(f)} ».</p>`;
-    }
-    app.innerHTML = `
-      <div class="qtop">
-        <button class="btn ghost sm" data-home>← Accueil</button>
-        <div class="qtitle">🔍 Rechercher une question</div>
-        <div class="qcount">${BANK.length}</div>
-      </div>
-      <p class="muted" style="margin:2px 0 14px">Cherche par mot-clé : un objet Kubernetes (Pod, PVC, Ingress…), une commande (kubectl drain, crictl…), un domaine ou un terme de la question.</p>
-      <input class="search" id="qSearch" placeholder="🔍 Ex. RBAC, drain, PVC, etcd, affinity…" value="${esc(searchFilter)}">
-      ${resultsHTML}`;
-    const s = $("#qSearch");
-    s.focus(); s.setSelectionRange(s.value.length, s.value.length);
-    s.addEventListener("input", () => { searchFilter = s.value; const pos = s.selectionStart; renderSearch(); const n = $("#qSearch"); n.focus(); n.setSelectionRange(pos, pos); });
   }
   function openSearchResult(i) {
     if (!searchMatches.length) return;
@@ -566,11 +558,10 @@
   // ============================ ÉVÉNEMENTS ============================
   document.addEventListener("click", (e) => {
     const t = e.target;
-    if (t.closest("[data-home]")) { session = null; renderHome(); return; }
+    if (t.closest("[data-home]")) { session = null; searchFilter = ""; renderHome(); return; }
     const lg = t.closest("[data-lang]");
     if (lg) { lang = lg.getAttribute("data-lang"); localStorage.setItem("cka-lang", lang); if (session) renderQuestion(); else renderHome(); return; }
     if (t.closest("[data-techs]")) { renderTechIndex(); return; }
-    if (t.closest("[data-search]")) { renderSearch(); return; }
     if (t.closest("[data-stats]")) { renderStats(); return; }
     const so = t.closest("[data-search-open]");
     if (so) { openSearchResult(parseInt(so.getAttribute("data-search-open"), 10)); return; }

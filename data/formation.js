@@ -56,6 +56,33 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-distributions",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "Distributions Kubernetes : les critères de choix",
+  "lead": "Ce qui différencie les façons d'installer/exploiter Kubernetes — au-delà de la distinction « vanilla » vue dans la note précédente.",
+  "body": [
+    "La doc officielle range les façons d'obtenir un cluster en 3 grandes catégories (« Setup » sur kubernetes.io) : environnement d'apprentissage (poste local), environnement de production auto-géré (kubeadm et les outils vus dans les notes « Kubernetes vanilla »/« Kubespray »), et solutions clé-en-main gérées par un fournisseur. Le support de formation liste des critères concrets pour comparer les options à l'intérieur de ces catégories :"
+  ],
+  "points": [
+    "Poste de dev, nœud unique — pour apprendre/tester en local, la doc officielle recommande kind (« runs Kubernetes clusters using Docker containers as nodes […] works great for learning ») ou minikube (« runs a single-node Kubernetes cluster on your local machine »), avant de passer à un vrai kubeadm.",
+    "Haute disponibilité automatique du control plane — voir la note « Fault tolérance du control plane » : kubeadm sait initialiser/joindre plusieurs nœuds control-plane, mais ne « pilote » pas une bascule automatique en cas de panne à ta place ; certaines distributions/plateformes en font plus dans ce sens.",
+    "Control plane auto-géré vs délégué — même distinction que « vanilla » vs « turnkey cloud solutions » (EKS, GKE, AKS…) : soit tu opères toi-même apiserver/etcd/scheduler, soit le fournisseur s'en charge et tu gardes une API conforme upstream.",
+    "Console web de management — Kubernetes propose officiellement un addon Dashboard (« deploy containerized applications […], troubleshoot […], and manage the cluster resources ») ; ATTENTION : ce projet est aujourd'hui archivé/non maintenu par la doc officielle, qui oriente plutôt vers des alternatives comme Headlamp. Certaines distributions (ex. Rancher, OpenShift) intègrent leur propre console — non détaillé ici, hors périmètre kubernetes.io.",
+    "Installation automatisée — kubeadm (l'outil officiel de base), Cluster API (« declarative APIs and tooling to simplify provisioning, upgrading, and operating multiple Kubernetes clusters »), kOps (« an automated cluster provisioning tool »), Kubespray (voir note dédiée).",
+  ],
+  "note": [
+    "Deux critères du support de formation n'ont pas d'équivalent vérifiable sur kubernetes.io aujourd'hui, donc pas de détail technique inventé ici : la « fédération de clusters » (l'ancien projet kubefed/« Cluster Federation » n'apparaît plus dans la doc officielle actuelle), et « l'intégration d'une chaîne d'intégration continue » (fonctionnalité propre à certaines distributions, ex. OpenShift Pipelines — pas un concept documenté par le projet Kubernetes lui-même)."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/setup/",
+    "https://kubernetes.io/docs/setup/learning-environment/",
+    "https://kubernetes.io/docs/setup/production-environment/tools/",
+    "https://kubernetes.io/docs/setup/production-environment/turnkey-solutions/",
+    "https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/"
+  ]
+},
+{
   "id": "f-j1-orchestrateur",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Fondamentaux",

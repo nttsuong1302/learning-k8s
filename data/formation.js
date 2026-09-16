@@ -1,0 +1,438 @@
+// Notes de formation Kubernetes (pas des QCM — juste des notes de cours organisées et sourcées).
+// window.CKA.formation : liste de fiches { id, day, section, title, lead, body[], points[], note[], refs[] }.
+window.CKA = window.CKA || {};
+window.CKA.formation = window.CKA.formation || [];
+(function () {
+  const F = window.CKA.formation;
+  const DATA = [
+{
+  "id": "f-j1-vanilla",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "Kubernetes « vanilla »",
+  "lead": "Le Kubernetes « nature », sans surcouche d'un fournisseur.",
+  "body": [
+    "« Vanilla » (ou « upstream ») désigne un cluster installé tel que défini par le projet open source Kubernetes (CNCF), sans les ajouts propriétaires d'une distribution : pas d'outillage, d'UI, de politiques réseau ou de sécurité spécifiques à un vendeur.",
+    "Ce n'est pas un terme officiel du site kubernetes.io, mais la doc officielle distingue bien les mêmes catégories :"
+  ],
+  "points": [
+    "Cluster auto-géré (« vanilla ») — installé avec kubeadm, tu configures toi-même le réseau (CNI), le stockage, l'ingress…",
+    "Distributions — Rancher/RKE2, OpenShift, k3s, Tanzu… ajoutent leur propre tooling par-dessus l'API Kubernetes standard.",
+    "Turnkey Cloud Solutions — EKS, GKE, AKS : le control plane est géré par le cloud, l'API reste conforme upstream."
+  ],
+  "note": [
+    "À retenir : « vanilla » = conformité maximale avec l'API et la doc officielles (utile pour le CKA/CKAD), mais rien n'est préconfiguré pour toi."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/setup/production-environment/",
+    "https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/",
+    "https://kubernetes.io/docs/setup/production-environment/turnkey-solutions/"
+  ]
+},
+{
+  "id": "f-j1-kubespray",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "Kubespray",
+  "lead": "Un outil Ansible pour déployer un cluster Kubernetes « vanilla » en production, alternative à kubeadm seul.",
+  "body": [
+    "La doc officielle liste Kubespray parmi les outils pour un cluster auto-géré (« vanilla ») en production, aux côtés de kubeadm et kOps : « A composition of Ansible playbooks, inventory, provisioning tools, and domain knowledge for generic OS/Kubernetes clusters configuration management tasks. »",
+    "C'est un projet officiel de la communauté Kubernetes (kubernetes-sigs/kubespray), qui automatise via Ansible l'installation d'un cluster complet (control plane + nœuds) plutôt que de le faire nœud par nœud comme avec kubeadm seul. Sa description sur GitHub : « Deploy a Production Ready Kubernetes Cluster »."
+  ],
+  "points": [
+    "Highly available cluster — support natif du mode haute disponibilité",
+    "Composable — choix du plugin réseau (CNI), entre autres options",
+    "Supporte la plupart des distributions Linux populaires",
+    "Déploie sur AWS, GCE, Azure, OpenStack, vSphere, Equinix Metal (bare metal), Oracle Cloud Infrastructure (expérimental), ou en bare metal",
+    "Inclut un mode Vagrant pour tester en local avant un déploiement réel"
+  ],
+  "note": [
+    "À situer par rapport à la note « Kubernetes vanilla » : Kubespray reste dans la catégorie « cluster auto-géré » (tu gardes la main sur le réseau, le stockage, l'ingress…), c'est juste l'outillage d'installation qui change — Ansible orchestrant plusieurs machines, plutôt que kubeadm exécuté manuellement nœud par nœud."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/setup/production-environment/tools/",
+    "https://kubespray.io/",
+    "https://github.com/kubernetes-sigs/kubespray"
+  ]
+},
+{
+  "id": "f-j1-orchestrateur",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "Orchestrateur : à quoi ça sert ?",
+  "lead": "Automatiser ce qu'on ferait sinon à la main, container par container, serveur par serveur.",
+  "body": [
+    "Kubernetes se définit officiellement comme « a portable, extensible, open source platform for managing containerized workloads and services that facilitates both declarative configuration and automation. »",
+    "Concrètement, un orchestrateur prend en charge :"
+  ],
+  "points": [
+    "Déploiement & rollout/rollback automatisés — mise à jour progressive avec surveillance de l'état de santé",
+    "Scaling — horizontal et vertical, manuel ou automatique (HPA/VPA)",
+    "Self-healing — redémarre/replace automatiquement les conteneurs défaillants",
+    "Service discovery & load balancing — DNS interne, répartition de charge entre Pods",
+    "Bin packing automatique — placement intelligent des conteneurs selon les ressources disponibles",
+    "Orchestration du stockage — montage automatique (local, cloud, réseau)",
+    "Gestion de la config & des secrets — sans reconstruire les images ni exposer les secrets"
+  ],
+  "note": [
+    "En résumé : on décrit un état désiré (déclaratif), et Kubernetes travaille en continu pour que la réalité corresponde à cet état."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/concepts/overview/",
+    "https://kubernetes.io/"
+  ]
+},
+{
+  "id": "f-j1-os-datacenter",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "L'orchestrateur comme « OS du datacenter »",
+  "lead": "Kubernetes fait pour un cluster de machines ce qu'un OS fait pour une seule machine.",
+  "body": [
+    "Un système d'exploitation classique alloue le CPU, la mémoire et le disque aux processus d'une machine. Kubernetes fait la même chose à l'échelle d'un cluster : il abstrait un ensemble de serveurs (nœuds) en une seule ressource de calcul, et place les workloads (Pods) sur les nœuds selon les ressources disponibles — c'est le kube-scheduler.",
+    "La doc officielle parle d'une plateforme « for managing containerized workloads across a cluster of machines at datacenter scale » — l'analogie « OS du datacenter » est une façon courante (hors doc officielle) de résumer cette idée : l'app ne « voit » plus un serveur précis, elle s'exécute quelque part dans le cluster, et Kubernetes gère le placement, l'allocation et la récupération des ressources."
+  ],
+  "points": [
+    "Control plane (le « noyau ») — kube-apiserver, kube-scheduler, kube-controller-manager, etcd : décide et mémorise l'état du cluster",
+    "Nœuds (les « cœurs CPU ») — kubelet + runtime conteneur exécutent réellement les workloads"
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/concepts/architecture/",
+    "https://kubernetes.io/docs/concepts/overview/components/"
+  ]
+},
+{
+  "id": "f-j1-pod-phase",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "Pod phase",
+  "lead": "Une vue « haut niveau » du cycle de vie d'un Pod — pas un diagnostic complet à elle seule.",
+  "body": [
+    "Le champ status.phase d'un Pod résume où il en est dans son cycle de vie. La doc officielle définit 5 valeurs possibles :"
+  ],
+  "points": [
+    "Pending — « The Pod has been accepted by the Kubernetes cluster, but one or more of the containers has not been set up and made ready to run. » (en attente de scheduling, de pull d'image, etc.)",
+    "Running — « The Pod has been bound to a node, and all of the containers have been created. At least one container is still running, or is in the process of starting or restarting. »",
+    "Succeeded — « All containers in the Pod have terminated in success, and will not be restarted. »",
+    "Failed — « All containers in the Pod have terminated, and at least one container has terminated in failure. »",
+    "Unknown — « For some reason the state of the Pod could not be obtained. This phase typically occurs due to an error in communicating with the node where the Pod should be running. »"
+  ],
+  "note": [
+    "Nuance importante : la phase ne dit pas tout. Un Pod peut être Running sans être prêt à recevoir du trafic — pour ça, Kubernetes expose des Pod Conditions plus fines : PodScheduled, PodReadyToStartContainers, Initialized, ContainersReady, Ready (celle regardée par les Services/Endpoints)."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/"
+  ]
+},
+{
+  "id": "f-j1-control-plane",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Control plane & etcd",
+  "title": "Control plane",
+  "lead": "Le « cerveau » du cluster : il décide, les nœuds exécutent.",
+  "body": [
+    "Le control plane prend les décisions globales sur le cluster (scheduling, réaction aux événements) et détecte/répond quand un état ne correspond plus à l'état désiré. Il peut tourner sur une seule machine ou être répliqué sur plusieurs (HA) — un cluster de production a généralement au moins 3 nœuds de control plane pour la tolérance aux pannes.",
+    "Ses composants, avec leur rôle exact (doc officielle) :"
+  ],
+  "points": [
+    "kube-apiserver — « the core component server that exposes the Kubernetes HTTP API » : le point d'entrée unique, tout (kubectl, contrôleurs, kubelet…) passe par lui",
+    "etcd — « consistent and highly-available key value store for all API server data » : la base de données du cluster, la source de vérité",
+    "kube-scheduler — « looks for Pods not yet bound to a node, and assigns each Pod to a suitable node » : décide où placer chaque Pod",
+    "kube-controller-manager — exécute les boucles de contrôle (controllers) qui implémentent le comportement de l'API Kubernetes (ex : Node controller, Job controller…)",
+    "cloud-controller-manager — « integrates with underlying cloud provider(s) » : optionnel, fait le lien avec l'API du cloud (LoadBalancer, volumes, nœuds…)"
+  ],
+  "note": [
+    "En face, chaque nœud (worker) fait tourner : kubelet (« ensures that Pods are running, including their containers »), kube-proxy (règles réseau pour les Services), et le container runtime (containerd, CRI-O…)."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/concepts/overview/components/",
+    "https://kubernetes.io/docs/concepts/architecture/"
+  ]
+},
+{
+  "id": "f-j1-controller-manager",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Control plane & etcd",
+  "title": "kube-controller-manager",
+  "lead": "« a daemon that embeds the core control loops shipped with Kubernetes » — le muscle qui fait converger l'état réel vers l'état désiré.",
+  "body": [
+    "Un control loop est défini par la doc comme « a non-terminating loop that regulates the state of the system » — l'analogie officielle est un thermostat : on fixe une température désirée, la boucle observe la température actuelle et agit pour réduire l'écart.",
+    "Chaque contrôleur suit ce même schéma pour une ressource Kubernetes donnée, et il n'agit jamais directement sur les conteneurs : il passe systématiquement par le kube-apiserver (ex : le Job controller « does not run any Pods or containers itself. Instead, the Job controller tells the API server to create or remove Pods. »).",
+    "Le kube-controller-manager regroupe plusieurs de ces boucles en un seul processus binaire (pour simplifier l'opération), parmi lesquelles :"
+  ],
+  "points": [
+    "Node controller — surveille l'état des nœuds",
+    "Replication controller — maintient le bon nombre de Pods pour un ReplicationController",
+    "Endpoints controller — peuple les objets Endpoints (lie Services ↔ Pods)",
+    "Namespace / ServiceAccount controllers — créent les comptes et jetons par défaut d'un namespace",
+    "+ des contrôleurs de plus haut niveau (souvent configurables) : Deployment, StatefulSet, Job, DaemonSet, HorizontalPodAutoscaler…"
+  ],
+  "note": [
+    "Le flag --controllers permet d'activer/désactiver individuellement ces boucles."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/reference/command-line-tools-reference/kube-controller-manager/",
+    "https://kubernetes.io/docs/concepts/architecture/controller/"
+  ]
+},
+{
+  "id": "f-j1-etcd-bagotte",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Control plane & etcd",
+  "title": "Si etcd bagotte, tout le cluster tombe ?",
+  "lead": "Non, pas instantanément — mais le control plane se « gèle » si le quorum est perdu.",
+  "body": [
+    "etcd est « the consistent and highly-available key value store used as Kubernetes' backing store for all cluster data » — donc s'il devient instable, le control plane a du mal à lire/écrire l'état du cluster. Mais la conséquence dépend de la gravité :"
+  ],
+  "points": [
+    "Instabilité légère (latence, un membre lent) — élections de leader plus fréquentes, API server plus lent/timeouts occasionnels. Dégradé, mais pas mort.",
+    "Perte du quorum (majorité des membres etcd injoignables) — etcd n'accepte plus les écritures (et parfois les lectures) → l'API server ne peut plus persister d'état → plus aucun nouveau scheduling, déploiement, scaling, reconciliation par les controllers."
+  ],
+  "note": [
+    "etcd utilise Raft : il faut une majorité (n/2)+1 de membres vivants pour continuer à fonctionner. D'où la recommandation officielle : nombre impair de membres (ajouter un membre pour passer à un nombre pair n'apporte aucune tolérance en plus), et généralement 3 ou 5 en pratique (5 = bon compromis résilience/perf en écriture).",
+    "Important — les Pods déjà lancés ne s'arrêtent pas immédiatement : chaque kubelet continue de gérer les conteneurs déjà assignés à son nœud indépendamment de l'API server. Donc le trafic déjà en cours continue globalement de tourner ; ce qui s'arrête, c'est tout ce qui nécessite une décision/écriture côté control plane (nouveaux déploiements, self-healing avancé, scaling, mises à jour…).",
+    "Pour limiter le risque : etcd en HA répartie sur plusieurs zones de panne, topologie stacked (etcd sur les mêmes nœuds que le control plane, plus simple) ou external (etcd sur des nœuds dédiés, meilleure isolation), et surtout — la doc insiste dessus — avoir un plan de sauvegarde des données etcd."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/tasks/administer-cluster/configure-upgrade-etcd/",
+    "https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/ha-topology/",
+    "https://etcd.io/docs/v3.6/faq/"
+  ]
+},
+{
+  "id": "f-j1-fault-tolerance",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Control plane & etcd",
+  "title": "Fault tolérance du control plane",
+  "lead": "On ne rend pas qu'etcd résilient — tout le control plane se réplique.",
+  "body": [
+    "Suite logique du point précédent : pour qu'une panne d'un nœud (ou d'une zone) ne mette pas le cluster en péril, la doc officielle kubeadm recommande de répliquer l'intégralité du control plane, pas seulement etcd :"
+  ],
+  "points": [
+    "≥ 3 nœuds de control plane, en nombre impair — « an odd number of control plane nodes can help with leader selection in the case of machine or zone failure »",
+    "Chaque nœud fait tourner sa propre instance de kube-apiserver, kube-scheduler, kube-controller-manager (et etcd si topologie stacked)",
+    "Load balancer devant les kube-apiserver : les clients (kubectl, kubelets…) ne parlent pas à un apiserver précis mais à un ControlPlaneEndpoint (DNS) pointant vers un load balancer TCP qui fait un health check sur le port 6443 de chaque apiserver, route uniquement vers les instances saines, et utilise un nom DNS plutôt qu'une IP fixe (recommandé, surtout en cloud)"
+  ],
+  "note": [
+    "Et le scheduler / controller-manager ? Contrairement à l'apiserver (actif sur tous les nœuds en même temps), kube-scheduler et kube-controller-manager utilisent une élection de leader basée sur les objets Lease (API group coordination.k8s.io) : un seul est actif à la fois, les autres sont en standby et prennent le relais si le leader disparaît.",
+    "Communication nœuds ↔ control plane : architecture « hub-and-spoke », tout passe par l'apiserver, connexions chiffrées par défaut (HTTPS + certificats). Pour les connexions control plane → nœud (logs, exec, port-forward), le Konnectivity service (proxy TCP moderne) a remplacé les anciens tunnels SSH."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/high-availability/",
+    "https://kubernetes.io/docs/concepts/architecture/leases/",
+    "https://kubernetes.io/docs/concepts/architecture/control-plane-node-communication/"
+  ]
+},
+{
+  "id": "f-j1-etcd-raft",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Control plane & etcd",
+  "title": "etcd & le protocole Raft",
+  "lead": "Le mécanisme qui permet aux membres d'etcd de rester d'accord entre eux, même en cas de panne.",
+  "body": [
+    "Note : Raft n'est pas un projet kubernetes.io — c'est l'algorithme de consensus utilisé par etcd (raft.github.io, papier de Diego Ongaro). Conçu pour être « easy to understand » (contrairement à Paxos), il repose sur des state machines répliquées : chaque membre tient un log identique, et un algorithme de consensus garantit que tous les membres appliquent exactement les mêmes commandes, dans le même ordre.",
+    "Les rôles : à tout moment, chaque nœud etcd est leader, follower ou candidate (en cours d'élection). Un seul leader à la fois traite les écritures.",
+    "Vocabulaire officiel (glossaire etcd) :"
+  ],
+  "points": [
+    "Term — « a monotonically increasing integer that is associated with each leader election [...] For a term there can only be one elected leader and term is incremented on leader change »",
+    "Election — « the etcd cluster holds elections among its members to choose a leader as part of the raft consensus protocol »",
+    "Quorum — « the number of active members needed for consensus to modify the cluster state. etcd requires a member majority to reach quorum » (voir la note « Si etcd bagotte » pour les chiffres)"
+  ],
+  "note": [
+    "En pratique, si le leader tombe : les followers détectent l'absence de heartbeat (timeout d'élection), un ou plusieurs deviennent candidate, déclenchent une nouvelle élection (nouveau term), et le premier à obtenir la majorité des votes devient le nouveau leader."
+  ],
+  "refs": [
+    "https://raft.github.io/",
+    "https://etcd.io/docs/v3.8/learning/glossary/",
+    "https://raft.github.io/raft.pdf"
+  ]
+},
+{
+  "id": "f-j1-scheduler-filter-score",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Scheduler",
+  "title": "kube-scheduler : filtering & scoring",
+  "lead": "Comment le scheduler choisit LE bon nœud pour un Pod, en 2 étapes.",
+  "body": [
+    "Le scheduler surveille en continu les Pods sans nœud assigné (nodeName vide) et décide, pour chacun, du « meilleur » nœud. Processus officiel en deux temps :"
+  ],
+  "points": [
+    "Filtering — « finds the set of Nodes where it's feasible to schedule the Pod ». Élimine les nœuds incompatibles : pas assez de ressources (CPU/RAM), taints non tolérés, affinité/anti-affinité non respectée, port déjà utilisé… Si aucun nœud ne passe, le Pod reste Pending.",
+    "Scoring — « the scheduler assigns a score to each Node that survived filtering, basing this score on the active scoring rules ». Les nœuds restants sont classés (répartition de charge, affinité préférée, spread de topologie…). Le Pod part sur le nœud avec le meilleur score (aléatoire en cas d'égalité), puis le scheduler notifie l'apiserver via un binding."
+  ],
+  "note": [
+    "Personnalisable via : Scheduling Policies (Predicates/Priorities, ancienne approche) ou Scheduling Profiles (Plugins sur les étapes Filter/Score/Bind, approche actuelle — la « Scheduling Framework »)."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/concepts/scheduling-eviction/kube-scheduler/",
+    "https://kubernetes.io/docs/concepts/scheduling-eviction/scheduling-framework/"
+  ]
+},
+{
+  "id": "f-j1-filtering-detail",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Scheduler",
+  "title": "Filtering en détail",
+  "lead": "Zoom sur l'étape 1 du scheduler : éliminer les nœuds qui ne PEUVENT pas faire tourner le Pod.",
+  "body": [
+    "Définition officielle : « these plugins are used to filter out nodes that cannot run the Pod. » Le scheduler appelle chaque filter plugin, dans l'ordre configuré, pour chaque nœud candidat. Dès qu'un plugin déclare un nœud infaisable, les plugins suivants ne sont même pas évalués pour ce nœud (court-circuit) — les nœuds peuvent être évalués en parallèle.",
+    "La suite d'étapes autour du Filter :"
+  ],
+  "points": [
+    "PreFilter — prépare les infos et vérifie l'état général du cluster/Pod avant de filtrer ; si erreur ici, tout le cycle de scheduling est annulé",
+    "Filter — élimine les nœuds infaisables",
+    "PostFilter — ne s'exécute que si aucun nœud n'a survécu au filtering ; peut tenter une remédiation, typiquement la préemption (évincer un Pod de priorité plus faible pour libérer de la place)"
+  ],
+  "note": [
+    "Ce qui rend un nœud « infeasible » (contraintes dures) : ressources insuffisantes (CPU/mémoire), nodeSelector (labels exigés absents), Node affinity required (requiredDuringSchedulingIgnoredDuringExecution) non satisfaite, taints non tolérés, ports déjà occupés, volumes non montables sur ce nœud, etc.",
+    "Piège classique : l'affinité preferred (preferredDuringSchedulingIgnoredDuringExecution) n'intervient PAS ici — c'est une préférence « souple » gérée à l'étape Score, pas au Filter. Seule la version required peut éliminer un nœud.",
+    "Et nodeName dans le spec du Pod court-circuite tout le scheduler (filtering + scoring) : le Pod va directement sur ce nœud, sans vérification.",
+    "Si zéro nœud ne passe le filtering → le Pod reste Pending (visible avec kubectl describe pod, event « FailedScheduling »), en attendant PostFilter/préemption ou qu'un nœud se libère."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/concepts/scheduling-eviction/scheduling-framework/",
+    "https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/",
+    "https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/"
+  ]
+},
+{
+  "id": "f-j1-filtering-volumes",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Scheduler",
+  "title": "Filtering (2/2) : contraintes de volumes",
+  "lead": "Suite de la note « Filtering en détail » : un nœud peut aussi être éliminé à cause du stockage qu'il ne peut pas satisfaire.",
+  "body": [
+    "À côté du CPU/mémoire, des labels et des taints, le scheduler vérifie aussi que les volumes demandés par le Pod peuvent effectivement être attachés/montés sur le nœud candidat. Ces vérifications portaient historiquement des noms de Predicates (ancien mécanisme de Scheduling Policy, déprécié depuis Kubernetes v1.23, remplacé par des filter plugins de la Scheduling Framework) :"
+  ],
+  "points": [
+    "VolumeRestrictions — vérifie que les volumes montés respectent les restrictions propres à leur provider de stockage",
+    "VolumeBinding — vérifie si le nœud a, ou peut obtenir, les volumes demandés (bind du PVC)",
+    "VolumeZone — vérifie que les volumes demandés respectent leurs contraintes de zone (ex. un disque créé en eu-west-1a ne peut pas être monté sur un nœud d'une autre zone)",
+    "EBSLimits / GCEPDLimits / AzureDiskLimits — vérifient que les limites de volumes AWS EBS / GCP PD / Azure Disk du nœud ne sont pas dépassées (legacy, spécifiques à un cloud)",
+    "NodeVolumeLimits — équivalent générique CSI des trois précédents : vérifie les limites de volumes CSI du nœud"
+  ],
+  "note": [
+    "Pourquoi c'est important : chaque cloud limite le nombre de volumes attachables à une seule machine. La doc officielle est explicite : « it is important for Kubernetes to respect those limits. Otherwise, Pods scheduled on a Node could get stuck waiting for volumes to attach. » D'où l'intérêt de filtrer avant de placer le Pod plutôt que de le laisser bloqué en ContainerCreating.",
+    "À retenir : les 3 limites « legacy » par cloud (EBS/GCE PD/Azure) sont progressivement remplacées par NodeVolumeLimits, générique et basé sur CSI — la tendance générale de Kubernetes est de sortir le code spécifique aux clouds du cœur du projet."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/reference/scheduling/policies/",
+    "https://kubernetes.io/docs/concepts/storage/storage-limits/"
+  ]
+},
+{
+  "id": "f-j1-ranking-scoring",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Scheduler",
+  "title": "Ranking / scoring en détail",
+  "lead": "Le filtering élimine ; le scoring classe ce qui reste pour choisir LE meilleur nœud.",
+  "body": [
+    "Pipeline officiel pour chaque nœud ayant survécu au filtering :"
+  ],
+  "points": [
+    "PreScore — travail préparatoire, génère un état partagé réutilisé par les plugins de score suivants (erreur ici = cycle de scheduling annulé)",
+    "Score — chaque plugin attribue une note à chaque nœud, « a well defined range of integers representing the minimum and maximum scores » (typiquement 0 à un NodeScoreMax, souvent 100)",
+    "NormalizeScore — ramène les scores bruts d'un plugin sur l'échelle commune avant le classement final (ex. mise à l'échelle proportionnelle au meilleur score obtenu)"
+  ],
+  "note": [
+    "Le scheduler combine les scores de tous les plugins selon leurs poids configurés (« plugin weights ») → score total par nœud → le meilleur gagne (aléatoire en cas d'égalité).",
+    "Le plugin clé : NodeResourcesFit — LeastAllocated (comportement par défaut) favorise les nœuds les moins utilisés → étale la charge sur le cluster ; MostAllocated favorise les nœuds déjà bien remplis (bin packing), utile pour consolider et libérer des nœuds entiers à scale-down (économies cloud) ; RequestedToCapacityRatio permet une courbe de scoring personnalisable, avec un poids par type de ressource.",
+    "Autres signaux de scoring courants (contraintes « souples », contrairement au filtering) : node affinity preferred, inter-pod affinity/anti-affinity, PodTopologySpreadConstraints, et ImageLocality (favorise un nœud qui a déjà l'image du conteneur en cache → démarrage plus rapide)."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/concepts/scheduling-eviction/scheduling-framework/",
+    "https://kubernetes.io/docs/concepts/scheduling-eviction/resource-bin-packing/"
+  ]
+},
+{
+  "id": "f-j1-plugins-extension",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Scheduler",
+  "title": "Plugins & extension points",
+  "lead": "Le scheduler n'est pas une boîte noire : c'est un pipeline de plugins, extensible bout en bout.",
+  "body": [
+    "Vue d'ensemble officielle : « these APIs allow most scheduling features to be implemented as plugins, while keeping the scheduling 'core' lightweight and maintainable. » Chaque étape déjà vue (Filter, Score, PreFilter…) n'est en fait qu'un extension point parmi 13, appelés dans l'ordre à chaque cycle de scheduling.",
+    "Scheduling Profiles : « you can configure a set of plugins as a scheduler profile and then define multiple profiles to fit various kinds of workload » — un seul binaire kube-scheduler peut faire tourner plusieurs profils (combinaisons de plugins activés/désactivés/pondérés), chacun choisi via schedulerName dans le Pod. Il est aussi possible de déployer un second scheduler complet en parallèle du défaut (doc « Configure Multiple Schedulers »)."
+  ],
+  "note": [
+    "Aller plus loin : au-delà des plugins in-tree, l'écosystème kubernetes-sigs/scheduler-plugins fournit des plugins out-of-tree pour des besoins non couverts nativement (coscheduling / gang scheduling, contraintes NUMA/topologie…)."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/concepts/scheduling-eviction/scheduling-framework/",
+    "https://kubernetes.io/docs/tasks/extend-kubernetes/configure-multiple-schedulers/"
+  ]
+},
+{
+  "id": "f-j1-secrets-base64",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Secrets & sécurité",
+  "title": "Secrets : encodé ≠ chiffré",
+  "lead": "Piège classique : un Secret Kubernetes n'est pas illisible par défaut.",
+  "body": [
+    "Par défaut, la valeur d'un Secret est simplement encodée en base64, pas chiffrée. Le base64 est réversible instantanément — ce n'est pas une protection, juste un format qui permet de stocker du binaire dans du JSON/YAML.",
+    "Conséquence : quiconque a accès à l'API (avec les droits get sur les secrets) ou à etcd directement peut lire la valeur en clair en une commande.",
+    "Comment se protéger réellement :"
+  ],
+  "points": [
+    "Chiffrement au repos (encryption at rest) — activer une EncryptionConfiguration côté kube-apiserver avec un provider (aescbc, kms, secretbox — identity = pas de chiffrement, c'est le défaut). S'ajoute au chiffrement disque/etcd, ne le remplace pas.",
+    "RBAC strict — limiter qui peut faire get/list/watch sur les secrets (principe du moindre privilège)",
+    "Sécuriser etcd — accès réseau restreint, chiffrement disque du stockage etcd",
+    "Audit logging — tracer les accès aux secrets"
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/concepts/configuration/secret/",
+    "https://kubernetes.io/docs/concepts/security/secrets-good-practices/",
+    "https://kubernetes.io/docs/tasks/administer-cluster/encrypt-data/"
+  ]
+},
+{
+  "id": "f-j1-eso",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Secrets & sécurité",
+  "title": "External Secrets Operator (ESO)",
+  "lead": "Fait le pont entre un coffre-fort externe (Vault, AWS Secrets Manager…) et les Secrets Kubernetes.",
+  "body": [
+    "Note : ESO n'est pas un projet kubernetes.io — c'est un opérateur open source séparé (external-secrets.io), couramment utilisé en formation/en entreprise pour combler le problème du base64 vu juste au-dessus (les secrets ne doivent pas vivre en clair dans les manifests/Git).",
+    "Le principe : au lieu d'écrire la vraie valeur d'un Secret dans un YAML, on décrit où aller la chercher. ESO la récupère régulièrement et crée/synchronise le Secret Kubernetes natif à ta place."
+  ],
+  "points": [
+    "SecretStore (namespacé) / ClusterSecretStore (cluster-wide) — définit comment s'authentifier auprès du provider externe",
+    "ExternalSecret — définit quelles données aller chercher, référence un SecretStore, gère le templating",
+    "Le controller crée un Secret Kubernetes standard, tenu à jour automatiquement en cas de rotation côté provider",
+    "Providers supportés (40+) : AWS Secrets Manager/Parameter Store, HashiCorp Vault, Azure Key Vault, GCP Secret Manager, 1Password, Bitwarden, GitHub/GitLab, etc."
+  ],
+  "note": [
+    "Limite à garder en tête : le Secret K8s résultant reste un Secret K8s classique — donc toujours « juste » en base64 côté etcd tant que l'encryption at rest n'est pas activée. ESO résout « où vit la vérité » (le vault externe), pas le stockage dans etcd."
+  ],
+  "refs": [
+    "https://external-secrets.io/latest/introduction/overview/",
+    "https://github.com/external-secrets/external-secrets"
+  ]
+},
+{
+  "id": "f-j1-vault",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Secrets & sécurité",
+  "title": "Comment Vault interagit avec Kubernetes",
+  "lead": "D'abord s'authentifier, ensuite récupérer/injecter les secrets — plusieurs façons de faire selon HashiCorp.",
+  "body": [
+    "1. S'authentifier — la méthode d'auth Kubernetes. Un Pod prouve son identité à Vault avec son propre service account token : il lit son JWT (token du ServiceAccount) monté dans /var/run/secrets/kubernetes.io/serviceaccount/token, l'envoie à l'endpoint de login de Vault avec un nom de role ; Vault vérifie ce JWT auprès de l'API TokenReview de Kubernetes (donc Vault doit avoir les droits pour appeler l'API K8s). Si valide, Vault renvoie un token Vault de courte durée, avec les permissions du role.",
+    "2. Récupérer les secrets — 3 méthodes comparées (doc officielle HashiCorp) :"
+  ],
+  "points": [
+    "Vault Secrets Operator (VSO) — synchronise les secrets Vault vers de vrais Secrets Kubernetes natifs via des CRDs. Approche « Kubernetes-native », la moins gourmande (charge sur Vault mutualisée). C'est le pendant HashiCorp d'ESO, mais spécifique à Vault.",
+    "Vault CSI Provider — monte les secrets comme volumes éphémères via le driver Secrets Store CSI (standard, multi-vendeurs). Une connexion Vault par Pod → charge plus élevée.",
+    "Vault Agent Injector — injecte un sidecar « Vault Agent » dans le Pod, qui s'authentifie et écrit les secrets dans un volume mémoire partagé. Pratique si plusieurs secrets/templates ou méthodes d'auth variées par appli, mais le plus coûteux en ressources."
+  ],
+  "note": [
+    "À retenir : contrairement à ESO (secret réellement recréé en Secret K8s), CSI et Agent Injector évitent parfois de matérialiser le secret dans etcd — un angle en plus de la protection vue avec « Secrets : encodé ≠ chiffré »."
+  ],
+  "refs": [
+    "https://developer.hashicorp.com/vault/docs/auth/kubernetes",
+    "https://developer.hashicorp.com/vault/docs/deploy/kubernetes/comparisons"
+  ]
+}
+  ];
+  DATA.forEach((o) => F.push(o));
+})();

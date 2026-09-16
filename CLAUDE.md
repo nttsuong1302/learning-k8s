@@ -47,6 +47,25 @@ Pas de backend : tout tourne côté navigateur (hébergeable sur GitHub Pages).
 |----|-------|-------------------|
 | `cnpg` | CloudNativePG — opérateur PostgreSQL sur Kubernetes | https://cloudnative-pg.io/docs/ |
 
+## 🎓 Notes de formation (hors CKA, pas de QCM)
+
+`window.CKA.formation` (fichier `data/formation.js`) contient des **notes de cours** prises
+pendant les sessions de formation Kubernetes de l'utilisateur — pas des questions, juste de la
+lecture organisée et sourcée (rubrique « 🎓 Notes de formation » sur l'accueil, même mécanique
+de navigation que les Techniques).
+
+Modèle d'une fiche :
+```js
+{ id, day, section, title, lead, body: [...], points: [...]?, note: [...]?, refs: [...] }
+```
+
+Pour cette rubrique uniquement, les sources officielles autorisées s'étendent au-delà de
+kubernetes.io / cloudnative-pg.io, à celles déjà validées par l'utilisateur dans ses notes :
+**etcd.io**, **raft.github.io**, **external-secrets.io**, **developer.hashicorp.com/vault**,
+**kubespray.io** / **github.com/kubernetes-sigs/kubespray**. Les mêmes principes de fidélité
+s'appliquent : ne rien inventer, chaque fiche porte ses `refs` vers la doc officielle du projet
+concerné.
+
 ## 🧩 Modèle de données (une question = un objet JS)
 
 Les questions vivent dans `data/*.js` et s'ajoutent à `window.CKA.questions`.
@@ -122,6 +141,7 @@ data/
   practical.js        # scénarios pratiques (+ objectifs de validation)
   techniques.js       # catalogue de techniques à parcourir
   cnpg.js             # techniques + QCM CloudNativePG (doc officielle)
+  formation.js         # notes de formation (pas de QCM) — Jour 1 : vanilla/Kubespray, control plane, etcd/Raft, scheduler filtering & scoring, Secrets/ESO/Vault
   explain-rich.js     # surcharge : explications en paragraphes (par id)
   translations-en.js  # surcharge : traductions EN des questions (par id)
 ```

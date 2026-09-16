@@ -175,6 +175,8 @@ mark { background: var(--warn); color: #241a02; border-radius: 3px; padding: 0 2
 .tech-cmds b { font-size: .85rem; color: var(--muted); }
 .cmd { background: #0b1120; border-radius: 8px; padding: 10px 12px; margin: 8px 0 0; overflow-x: auto; font-size: .82rem; color: #d7e3f4; white-space: pre; }
 .doc-link { display: inline-block; }
+.doc-links { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 6px; }
+.qcard > p { line-height: 1.6; margin: 0 0 12px; }
 
 /* ---------- Résultats ---------- */
 .insight { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }

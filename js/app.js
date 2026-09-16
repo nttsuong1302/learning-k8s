@@ -190,6 +190,7 @@
           <button class="btn" data-start="practical">🧪 Pratique (${BANK.filter((q) => q.type === "practical").length})</button>
           <button class="btn" data-start="exam">🎲 Mode examen (aléatoire)</button>
           <button class="btn accent" data-techs>🧭 Parcourir les techniques (${TECHS.length})</button>
+          <button class="btn accent" data-formation>🎓 Notes de formation (${FORMATION.length})</button>
           <button class="btn" data-stats>📊 Mes résultats</button>
           <button class="btn ghost" data-reset>↺ Réinitialiser la progression</button>
         </div>
@@ -372,6 +373,72 @@
     techIndexPos = i;
   }
   let techIndexPos = 0;
+
+  // ============================ FORMATION (notes de cours, pas de QCM) ============================
+  const FORMATION = window.CKA.formation || [];
+  let formationFilter = "";
+  let formationPos = 0;
+
+  function formationCardHTML(n) {
+    const gi = FORMATION.indexOf(n);
+    return `<button class="tech-card" data-formation-open="${gi}"><span class="tc-title">${esc(n.title)}</span><span class="tc-sum">${esc(n.lead)}</span></button>`;
+  }
+
+  function renderFormationIndex() {
+    const f = formationFilter.toLowerCase();
+    const match = (n) => !f || (n.title + " " + n.lead + " " + n.body.join(" ") + " " + (n.points || []).join(" ")).toLowerCase().includes(f);
+    const sections = [];
+    FORMATION.forEach((n) => { if (!sections.includes(n.section)) sections.push(n.section); });
+    const groups = sections.map((sec) => {
+      const list = FORMATION.filter((n) => n.section === sec && match(n));
+      if (!list.length) return "";
+      return `<div class="tech-group"><h3>${esc(sec)} <span>${list.length}</span></h3><div class="tech-list">${list.map(formationCardHTML).join("")}</div></div>`;
+    }).join("");
+    app.innerHTML = `
+      <div class="qtop">
+        <button class="btn ghost sm" data-home>← Accueil</button>
+        <div class="qtitle">🎓 Notes de formation</div>
+        <div class="qcount">${FORMATION.length}</div>
+      </div>
+      <p class="muted" style="margin:2px 0 14px">Tes notes de formation Kubernetes, organisées et sourcées — pas de QCM ici, juste de la lecture.</p>
+      <input class="search" id="formationSearch" placeholder="🔍 Filtrer (ex. etcd, scheduler, secrets, vault…)" value="${esc(formationFilter)}">
+      <div class="tech-index">${groups || '<p class="muted">Aucune note ne correspond.</p>'}</div>`;
+    const s = $("#formationSearch");
+    s.addEventListener("input", () => { formationFilter = s.value; const pos = s.selectionStart; renderFormationIndex(); const n = $("#formationSearch"); n.focus(); n.setSelectionRange(pos, pos); });
+  }
+
+  function renderFormationReader(i) {
+    if (i < 0) i = 0; if (i > FORMATION.length - 1) i = FORMATION.length - 1;
+    const n = FORMATION[i];
+    const body = (n.body || []).map((p) => `<p>${esc(p)}</p>`).join("");
+    const points = (n.points || []).length ? `<ul class="tech-points">${n.points.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>` : "";
+    const note = (n.note || []).length ? `<div class="synth"><b>📌 À retenir</b>${n.note.map((p) => `<p>${esc(p)}</p>`).join("")}</div>` : "";
+    const refs = (n.refs || []).map((r) => {
+      const host = (r.match(/^https?:\/\/([^/]+)/) || [])[1] || "doc";
+      return `<a class="doc-link" href="${esc(r)}" target="_blank" rel="noopener">📖 ${esc(host)} ↗</a>`;
+    }).join("");
+    app.innerHTML = `
+      <div class="qtop">
+        <button class="btn ghost sm" data-formation-index>← Liste</button>
+        <div class="qtitle">🎓 ${esc(n.section)}</div>
+        <div class="qcount">${i + 1} / ${FORMATION.length}</div>
+      </div>
+      <div class="qbar"><span style="width:${((i + 1) / FORMATION.length) * 100}%"></span></div>
+      <div class="qtags"><span class="tag">${esc(n.day)}</span></div>
+      <div class="qcard">
+        <h2 class="qtext">${esc(n.title)}</h2>
+        <p class="scenario"><b>${esc(n.lead)}</b></p>
+        ${body}
+        ${points}
+        ${note}
+        <div class="doc-links">${refs}</div>
+      </div>
+      <div class="qnav">
+        <button class="btn ghost" data-formation-prev ${i === 0 ? "disabled" : ""}>← Précédent</button>
+        <button class="btn" data-formation-next ${i === FORMATION.length - 1 ? "disabled" : ""}>Suivant →</button>
+      </div>`;
+    formationPos = i;
+  }
 
   // ============================ SESSION ============================
   let session = null;
@@ -558,7 +625,7 @@
   // ============================ ÉVÉNEMENTS ============================
   document.addEventListener("click", (e) => {
     const t = e.target;
-    if (t.closest("[data-home]")) { session = null; searchFilter = ""; renderHome(); return; }
+    if (t.closest("[data-home]")) { session = null; searchFilter = ""; formationFilter = ""; renderHome(); return; }
     const lg = t.closest("[data-lang]");
     if (lg) { lang = lg.getAttribute("data-lang"); localStorage.setItem("cka-lang", lang); if (session) renderQuestion(); else renderHome(); return; }
     if (t.closest("[data-techs]")) { renderTechIndex(); return; }
@@ -570,6 +637,12 @@
     if (to) { renderTechReader(parseInt(to.getAttribute("data-tech-open"), 10)); return; }
     if (t.closest("[data-tech-prev]") && !t.closest("[data-tech-prev]").disabled) { renderTechReader(techIndexPos - 1); return; }
     if (t.closest("[data-tech-next]") && !t.closest("[data-tech-next]").disabled) { renderTechReader(techIndexPos + 1); return; }
+    if (t.closest("[data-formation]")) { renderFormationIndex(); return; }
+    if (t.closest("[data-formation-index]")) { renderFormationIndex(); return; }
+    const fo = t.closest("[data-formation-open]");
+    if (fo) { renderFormationReader(parseInt(fo.getAttribute("data-formation-open"), 10)); return; }
+    if (t.closest("[data-formation-prev]") && !t.closest("[data-formation-prev]").disabled) { renderFormationReader(formationPos - 1); return; }
+    if (t.closest("[data-formation-next]") && !t.closest("[data-formation-next]").disabled) { renderFormationReader(formationPos + 1); return; }
     if (t.closest("[data-prev]") && !t.closest("[data-prev]").disabled) { session.i--; renderQuestion(); return; }
     if (t.closest("[data-next]")) { if (session.i < session.list.length - 1) { session.i++; renderQuestion(); } else { session = null; renderHome(); } return; }
 

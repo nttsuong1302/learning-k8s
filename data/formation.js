@@ -207,6 +207,33 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-cilium-rancher-cni",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "Cilium, et le CNI utilisé par Rancher",
+  "lead": "Un CNI construit sur eBPF qui va bien au-delà du réseau — et quel CNI tourne réellement derrière un cluster Rancher.",
+  "body": [
+    "Cilium est « open source software for transparently securing the network connectivity between application services deployed using Linux container management platforms like Docker and Kubernetes ». Construit sur eBPF, une technologie noyau Linux qui « enables the dynamic insertion of powerful security visibility and control logic within Linux itself »."
+  ],
+  "points": [
+    "Networking — fonctionnalités CNI classiques, avec overlay, native routing (voir note « Native routing vs overlay ») et options de routage flexibles.",
+    "Remplace kube-proxy — via du load balancing distribué (est-ouest et nord-sud) implémenté en eBPF, au lieu des règles iptables/IPVS classiques.",
+    "Sécurité — politiques réseau basées sur l'identité, du L3 au L7 (donc au-delà des simples IP/ports — filtrage applicatif possible, ex. HTTP).",
+    "Observabilité — intégré avec Hubble, pour visualiser en détail les communications entre services.",
+    "Statut CNCF — projet Graduated (accepté en Incubating le 13 oct. 2021, passé Graduated le 11 oct. 2023), comme CRI-O.",
+    "CNI utilisé par Rancher — Rancher pilote des clusters RKE2 (ou K3s), et c'est RKE2 qui embarque le choix des CNI : « RKE2 bundles four primary CNI Plugins: Canal, Cilium, Calico, and Flannel », avec Canal comme CNI par défaut, et Multus disponible en CNI secondaire (à activer en plus d'un CNI primaire).",
+    "Détail pratique — seuls Calico et Flannel supportent les nœuds Windows ; Canal et Cilium ne le supportent pas actuellement."
+  ],
+  "note": [
+    "Rancher n'a donc pas « son » CNI propriétaire : c'est RKE2 (la distribution Kubernetes sous-jacente) qui propose le choix, avec Canal en défaut — Cilium en fait partie si tu veux les fonctionnalités eBPF/Hubble vues ci-dessus."
+  ],
+  "refs": [
+    "https://docs.cilium.io/en/stable/overview/intro/",
+    "https://www.cncf.io/projects/cilium/",
+    "https://docs.rke2.io/networking/basic_network_options"
+  ]
+},
+{
   "id": "f-j1-orchestrateur",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Fondamentaux",

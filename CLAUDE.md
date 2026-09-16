@@ -118,6 +118,7 @@ data/
   theory9.js          # QCM lot 9 (+50) — scan kubernetes.io (kubeadm certs renew, RBAC impersonate, IngressClass.controller, CSIDriver, finalizers, kubectl diff/scale…), bilingue
   theory10.js         # QCM lot 10 (+50) — scan kubernetes.io (TokenRequest v1.22, APF FlowSchema, Gateway API, VolumeAttachment/VolumeAttributesClass, kubectl rollout restart/debug --profile…), bilingue
   theory11.js         # QCM lot 11 (+50) — scan kubernetes.io (control-plane-endpoint, ClusterRole view, CRD subresources, VolumeSnapshotContent, GatewayClass, crictl, kubectl attach/wait/drain…), bilingue
+  theory12.js         # QCM lot 12 (ajout ponctuel depuis discussion) — méthodes d'authentification de kube-apiserver (certificats X.509, bearer tokens), bilingue
   practical.js        # scénarios pratiques (+ objectifs de validation)
   techniques.js       # catalogue de techniques à parcourir
   cnpg.js             # techniques + QCM CloudNativePG (doc officielle)

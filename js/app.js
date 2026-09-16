@@ -196,7 +196,7 @@
         </div>
       </section>
       ${resultsSection}
-      <footer class="foot">Banque v1 · on grossit ensuite par lots jusqu'à 1000 questions. Progression enregistrée localement (ce navigateur).</footer>`;
+      <footer class="foot">2026 · Suong</footer>`;
 
     const s = $("#homeSearch");
     s.addEventListener("input", () => { searchFilter = s.value; const pos = s.selectionStart; renderHome(); const n = $("#homeSearch"); n.focus(); n.setSelectionRange(pos, pos); });

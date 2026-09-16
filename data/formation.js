@@ -125,6 +125,55 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-node-specs",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "Installation : specs des nœuds",
+  "lead": "Ce qu'il faut avoir en tête côté machines avant d'installer un cluster : type de machine, architecture CPU, et dimensionnement control plane / workers.",
+  "body": [
+    "Les nœuds peuvent être des machines virtuelles ou physiques. Une VM se migre plus facilement qu'une machine physique — un argument pour héberger le control plane sur des VMs plutôt que du bare metal.",
+    "Architectures CPU supportées par Kubernetes (binaires et images de conteneurs officiels) : amd64 (x86_64), arm64, ainsi que 386, arm (32-bit), ppc64le et s390x."
+  ],
+  "points": [
+    "Control plane — le support de formation indique qu'au moins 1 cœur et 1 Go de RAM suffisent pour kube-apiserver et etcd sur un cluster de quelques dizaines de nœuds. À noter : le minimum officiel documenté par kubeadm pour une machine de control plane est plus élevé — 2 CPU et 2 Go de RAM par machine (voir note ci-dessous).",
+    "Workers — les nœuds n'ont pas besoin d'être identiques entre eux (CPU, mémoire…) ; chaque worker peut avoir un profil différent selon les workloads qu'il héberge.",
+    "Bien choisir la taille des nœuds : plus de nœuds = plus de overhead d'infrastructure répété sur chaque machine (DaemonSets, agents de monitoring/logging…) ; moins de nœuds = moins de flexibilité et de résilience (perdre un nœud retire une plus grosse part de la capacité du cluster)."
+  ],
+  "note": [
+    "Écart de source à garder en tête : la doc officielle kubeadm (install-kubeadm) fixe un minimum général de 2 CPU et 2 Go de RAM par machine du cluster — je n'ai pas retrouvé le chiffre « 1 cœur / 1 Go pour api-server + etcd » du support de formation directement sur kubernetes.io ; il vient probablement d'un outil/calculateur tiers (voir lien learnkube.com ci-dessous, qui n'est PAS de la documentation officielle Kubernetes). Les deux chiffres ne se contredisent pas forcément (l'un est un plancher par machine, l'autre semble cibler les composants api-server/etcd spécifiquement), mais seul le chiffre kubeadm est vérifié sur une source officielle."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/",
+    "https://kubernetes.io/releases/download/",
+    "https://learnkube.com/kubernetes-instance-calculator"
+  ]
+},
+{
+  "id": "f-j1-cluster-sizing",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "Dimensionner un cluster en nombre de nœuds",
+  "lead": "Les limites officielles de support d'un cluster Kubernetes, et comment le control plane doit suivre quand le nombre de nœuds augmente.",
+  "body": [
+    "La doc officielle (« Considerations for large clusters ») définit des critères de support pour un cluster Kubernetes : au-delà, le cluster n'est plus dans le périmètre testé/supporté par le projet."
+  ],
+  "points": [
+    "No more than 110 Pods per node.",
+    "No more than 5,000 nodes.",
+    "No more than 150,000 total Pods.",
+    "No more than 300,000 total containers.",
+    "Scaling du control plane : « you would run one or two control plane instances per failure zone, scaling those instances vertically first and then scaling horizontally after reaching the point of falling returns to (vertical) scale » — donc on augmente d'abord les ressources (CPU/RAM) des instances existantes, puis on en ajoute de nouvelles seulement une fois les gains de la verticale épuisés.",
+    "Tolérance de panne : garder au moins une instance de control plane par zone de disponibilité.",
+    "Pour les très gros clusters, la doc recommande de stocker les objets Event dans une instance etcd séparée dédiée, pour ne pas dégrader les performances de l'etcd principal (qui porte Pods, Deployments, etc.)."
+  ],
+  "note": [
+    "À relier à la note « Installation : specs des nœuds » : le compromis « plus de nœuds = plus d'overhead d'infra / moins de nœuds = moins de résilience » y était évoqué de façon générale — ici ce sont les vrais plafonds chiffrés du projet."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/setup/best-practices/cluster-large/"
+  ]
+},
+{
   "id": "f-j1-control-plane",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Control plane & etcd",

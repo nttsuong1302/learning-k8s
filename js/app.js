@@ -46,6 +46,89 @@
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const shuffle = (a) => { const r = a.slice(); for (let i = r.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [r[i], r[j]] = [r[j], r[i]]; } return r; };
 
+  // ---------- Notions transverses (détection par mots-clés dans le texte des questions déjà écrites,
+  // pour un bilan plus fin que les 5 domaines CKA — n'ajoute aucun fait, ne fait que classer l'existant) ----------
+  const NOTIONS = [
+    { id: "pod", label: "Pod", re: /\bpods?\b/i },
+    { id: "deployment", label: "Deployment", re: /\bdeployments?\b/i },
+    { id: "replicaset", label: "ReplicaSet", re: /replicaset/i },
+    { id: "statefulset", label: "StatefulSet", re: /statefulset/i },
+    { id: "daemonset", label: "DaemonSet", re: /daemonset/i },
+    { id: "job", label: "Job / CronJob", re: /\bjobs?\b|cronjob/i },
+    { id: "service", label: "Service", re: /\bservices?\b(?!\s*account)/i },
+    { id: "serviceaccount", label: "ServiceAccount", re: /serviceaccount|service account/i },
+    { id: "ingress", label: "Ingress", re: /ingress/i },
+    { id: "networkpolicy", label: "NetworkPolicy", re: /networkpolic/i },
+    { id: "endpointslice", label: "Endpoints / EndpointSlice", re: /endpointslice|\bendpoints?\b/i },
+    { id: "gateway", label: "Gateway API", re: /gatewayclass|httproute|gateway api|\bgateway\b/i },
+    { id: "dns", label: "DNS / CoreDNS", re: /coredns|\bdns\b/i },
+    { id: "rbac", label: "RBAC (Role/ClusterRole)", re: /\brbac\b|clusterrole|rolebinding|\brole\b/i },
+    { id: "namespace", label: "Namespace", re: /namespace/i },
+    { id: "configmap", label: "ConfigMap", re: /configmap/i },
+    { id: "secret", label: "Secret", re: /\bsecrets?\b/i },
+    { id: "pv-pvc", label: "PV / PVC", re: /\bpvc?\b|persistentvolume/i },
+    { id: "storageclass", label: "StorageClass", re: /storageclass/i },
+    { id: "csi", label: "CSI", re: /\bcsi\b/i },
+    { id: "volumesnapshot", label: "VolumeSnapshot", re: /volumesnapshot/i },
+    { id: "node-kubelet", label: "Node / kubelet", re: /\bkubelet\b|\bnode\b/i },
+    { id: "kube-proxy", label: "kube-proxy", re: /kube-proxy/i },
+    { id: "apiserver", label: "kube-apiserver", re: /kube-apiserver|apiserver|api server/i },
+    { id: "scheduler", label: "kube-scheduler", re: /kube-scheduler|\bscheduler\b/i },
+    { id: "controller-manager", label: "controller-manager", re: /controller-manager/i },
+    { id: "etcd", label: "etcd", re: /\betcd\b/i },
+    { id: "kubeadm", label: "kubeadm", re: /kubeadm/i },
+    { id: "taints", label: "Taints / Tolerations", re: /\btaints?\b|toleration/i },
+    { id: "affinity", label: "Affinity", re: /affinity/i },
+    { id: "probes", label: "Probes (liveness/readiness)", re: /liveness|readiness probe|startup probe|\bprobe\b/i },
+    { id: "requests-limits", label: "Requests / Limits / QoS", re: /resource requests?|resource limits?|\bqos\b/i },
+    { id: "hpa", label: "HPA (autoscaling)", re: /\bhpa\b|horizontalpodautoscaler|autoscal/i },
+    { id: "pdb", label: "PodDisruptionBudget", re: /poddisruptionbudget|\bpdb\b/i },
+    { id: "eviction", label: "Eviction / drain / cordon", re: /evict|\bdrain\b|\bcordon\b/i },
+    { id: "admission", label: "Admission controllers", re: /admission/i },
+    { id: "crd", label: "CRD", re: /\bcrd\b|customresourcedefinition/i },
+    { id: "certs", label: "Certificats / CSR", re: /\bcsr\b|certificatesigningrequest|certificate/i },
+    { id: "static-pods", label: "Static Pods", re: /static pod/i },
+    { id: "kubectl", label: "kubectl (CLI)", re: /kubectl/i },
+    { id: "crictl", label: "crictl", re: /crictl/i },
+    { id: "runtimeclass", label: "RuntimeClass", re: /runtimeclass/i },
+    { id: "kustomize", label: "Kustomize", re: /kustomize/i },
+    { id: "priority-fairness", label: "API Priority & Fairness", re: /priority and fairness|flowschema|prioritylevelconfiguration/i },
+    { id: "cnpg", label: "CloudNativePG", re: /cloudnativepg|cnpg/i },
+  ];
+  function notionTextOf(q) {
+    const parts = [q.q, q.title, q.scenario, q.explain];
+    if (q.choices) parts.push(q.choices.join(" "));
+    if (q.tasks) parts.push(q.tasks.join(" "));
+    return parts.filter(Boolean).join(" ");
+  }
+  const notionCache = new Map();
+  function notionsFor(q) {
+    if (notionCache.has(q.id)) return notionCache.get(q.id);
+    const text = notionTextOf(q);
+    const tags = NOTIONS.filter((n) => n.re.test(text)).map((n) => n.id);
+    notionCache.set(q.id, tags);
+    return tags;
+  }
+  function computeNotionStats() {
+    const per = {};
+    NOTIONS.forEach((n) => (per[n.id] = { total: 0, seen: 0, mastered: 0, attempts: 0, ok: 0 }));
+    BANK.forEach((q) => {
+      const tags = notionsFor(q);
+      if (!tags.length) return;
+      const p = progress[q.id];
+      tags.forEach((id) => {
+        const s = per[id]; s.total++;
+        if (!p || !p.seen) return;
+        s.seen++;
+        const att = p.attempts != null ? p.attempts : 1;
+        const ok = p.ok != null ? p.ok : (p.correct ? 1 : 0);
+        s.attempts += att; s.ok += ok;
+        if (p.correct) s.mastered++;
+      });
+    });
+    return per;
+  }
+
   // ---------- Langue (FR par défaut, EN = conditions d'examen) ----------
   let lang = localStorage.getItem("cka-lang") || "fr";
   // Retourne le champ traduit si dispo en EN, sinon le français.
@@ -134,6 +217,31 @@
       </div>`;
     }).join("");
 
+    // ---- Bilan par notion (granularité plus fine que les 5 domaines) ----
+    const perN = computeNotionStats();
+    const notionRated = NOTIONS.map((n) => {
+      const s = perN[n.id];
+      const acc = s.attempts ? Math.round((s.ok / s.attempts) * 100) : null;
+      return { n, s, acc };
+    }).filter((r) => r.s.total > 0 && r.s.attempts > 0).sort((a, b) => a.acc - b.acc);
+
+    const notionRows = notionRated.map((r) => {
+      const acc = r.acc;
+      const color = acc >= 75 ? "var(--good)" : acc >= 50 ? "var(--warn)" : "var(--bad)";
+      const wrong = r.s.attempts - r.s.ok;
+      return `<div class="stat-row">
+        <div class="sr-head"><span class="sr-name">${esc(r.n.label)}</span><span class="sr-acc" style="color:${color}">${acc}%</span></div>
+        <div class="sr-bar"><span style="width:${acc}%;background:${color}"></span></div>
+        <div class="sr-meta">${r.s.mastered}/${r.s.total} maîtrisées · ${r.s.attempts} tentatives · <span class="ko">${wrong} erreurs</span></div>
+      </div>`;
+    }).join("");
+    const notionBlock = notionRated.length
+      ? `<h2 class="section-title">🔎 Par notion Kubernetes</h2>
+         <p class="muted" style="margin:2px 0 14px">Détecté à partir des questions déjà tentées (Pod, RBAC, Ingress, PVC…), triées de la notion la plus fragile à la plus maîtrisée.</p>
+         <div class="stats-list">${notionRows}</div>`
+      : `<h2 class="section-title">🔎 Par notion Kubernetes</h2>
+         <p class="muted">Réponds à quelques questions pour voir apparaître le détail par notion (Pod, RBAC, Ingress, PVC…).</p>`;
+
     app.innerHTML = `
       <div class="qtop">
         <button class="btn ghost sm" data-home>← Accueil</button>
@@ -143,6 +251,7 @@
       <p class="muted" style="margin:2px 0 14px">Taux global de bonnes réponses : <b style="color:var(--text)">${overall}%</b> (${totOk}/${totAtt} tentatives). Les catégories où tu fais le plus d'erreurs ressortent en rouge.</p>
       ${insight}
       <div class="stats-list">${rows}</div>
+      ${notionBlock}
       <div class="qnav"><button class="btn ghost" data-reset>↺ Réinitialiser la progression</button></div>`;
   }
 
@@ -207,7 +316,11 @@
 
   function startSession(title, questions) {
     if (!questions.length) { alert("Aucune question dans cette sélection."); return; }
-    session = { title, list: questions, i: 0, clusters: {}, terms: {} };
+    // Reprend à la première question pas encore réussie plutôt que de repartir de zéro
+    // (sinon on retombe sur des questions déjà maîtrisées à chaque nouvelle entrée dans la banque).
+    let startIdx = questions.findIndex((q) => !(progress[q.id] && progress[q.id].correct));
+    if (startIdx < 0) startIdx = 0;
+    session = { title, list: questions, i: startIdx, clusters: {}, terms: {} };
     renderQuestion();
   }
 

@@ -150,6 +150,30 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-control-plane-install",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Control plane & etcd",
+  "title": "Installer un control plane avec kubeadm — étapes clés",
+  "lead": "5 étapes pour passer de zéro à un control plane fonctionnel (topologie stacked).",
+  "body": [
+    "Suite de la note « Control plane » : voici comment le mettre en place concrètement avec kubeadm (l'outil « vanilla » vu dans la note « Kubernetes vanilla »)."
+  ],
+  "points": [
+    "1. Prérequis sur chaque machine — OS Linux compatible deb/rpm, ≥ 2 GiB RAM, ≥ 2 CPU sur le nœud control-plane, connectivité réseau complète entre les machines, un container runtime installé (containerd, CRI-O…), et kubeadm + kubelet + kubectl installés sur tous les hôtes.",
+    "2. Initialiser le control plane — `kubeadm init --apiserver-advertise-address=<ip> --pod-network-cidr=<cidr>`. En une seule commande : préflight checks, génération des certificats/clés, démarrage des composants du control plane (apiserver, scheduler, controller-manager, etcd local par défaut en topologie stacked), et génération du token de bootstrap pour les workers.",
+    "3. Configurer l'accès kubectl — copier /etc/kubernetes/admin.conf vers $HOME/.kube/config (`mkdir -p $HOME/.kube && sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config && sudo chown $(id -u):$(id -g) $HOME/.kube/config`), ou exporter `KUBECONFIG=/etc/kubernetes/admin.conf`.",
+    "4. Installer un plugin réseau de Pods (CNI) — obligatoire : sans lui, les Pods (dont CoreDNS) restent bloqués. `kubectl apply -f <manifest-du-CNI-choisi>`.",
+    "5. Joindre les workers (ou d'autres nœuds control-plane en HA) — générer le token via `kubeadm token create --print-join-command`, puis exécuter la commande `kubeadm join <ip>:6443 --token <token> --discovery-token-ca-cert-hash sha256:<hash>` sur chaque nœud à rejoindre."
+  ],
+  "note": [
+    "Pour repartir de zéro sur un nœud : `kubeadm reset`. Pour retirer un nœud proprement : `kubectl drain <node> --delete-emptydir-data --force --ignore-daemonsets` puis `kubectl delete node <node>`."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/create-cluster-kubeadm/",
+    "https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/"
+  ]
+},
+{
   "id": "f-j1-controller-manager",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Control plane & etcd",

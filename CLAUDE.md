@@ -62,7 +62,8 @@ Modèle d'une fiche :
 Pour cette rubrique uniquement, les sources officielles autorisées s'étendent au-delà de
 kubernetes.io / cloudnative-pg.io, à celles déjà validées par l'utilisateur dans ses notes :
 **etcd.io**, **raft.github.io**, **external-secrets.io**, **developer.hashicorp.com/vault**,
-**kubespray.io** / **github.com/kubernetes-sigs/kubespray**. Les mêmes principes de fidélité
+**kubespray.io** / **github.com/kubernetes-sigs/kubespray**, **kubernetes-csi.github.io**
+(doc officielle du SIG-Storage pour le développement/déploiement des CSI drivers). Les mêmes principes de fidélité
 s'appliquent : ne rien inventer, chaque fiche porte ses `refs` vers la doc officielle du projet
 concerné.
 

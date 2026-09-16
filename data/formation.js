@@ -484,6 +484,32 @@ window.CKA.formation = window.CKA.formation || [];
     "https://developer.hashicorp.com/vault/docs/auth/kubernetes",
     "https://developer.hashicorp.com/vault/docs/deploy/kubernetes/comparisons"
   ]
+},
+{
+  "id": "f-j1-csi",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Storage",
+  "title": "CSI : définition & CSI driver",
+  "lead": "Le standard qui permet à n'importe quel système de stockage de s'intégrer à Kubernetes sans toucher au code du projet.",
+  "body": [
+    "CSI (Container Storage Interface) est défini comme « a standard for exposing arbitrary block and file storage systems to containerized workloads on Container Orchestration Systems (COs) like Kubernetes ».",
+    "Avant CSI, les pilotes de stockage étaient intégrés directement dans le code de Kubernetes (« in-tree »). CSI a changé ça : il permet à des fournisseurs de stockage tiers de « write and deploy plugins exposing new storage systems in Kubernetes without ever having to touch the core Kubernetes code »."
+  ],
+  "points": [
+    "CSI driver — implémente les services Identity, Node, et optionnellement Controller définis par la spécification CSI ; c'est une application conteneurisée, développée et déployée librement par chaque fournisseur de stockage.",
+    "Controller Plugin — déployé en Deployment ou StatefulSet, sur n'importe quel nœud du cluster : « generally does not need direct access to the host and can perform all its operations through the Kubernetes API » (provisioning, attachment des volumes…).",
+    "Node Plugin — déployé en DaemonSet, sur CHAQUE nœud du cluster, car il lui faut « direct access to the host for making block devices and/or filesystem mounts available to the Kubernetes kubelet ».",
+    "CSIDriver — objet Kubernetes qui décrit les capacités et exigences d'un driver CSI donné, déployé par le fournisseur de stockage.",
+    "Dans le spec d'un Pod, un volume `csi` référence : `driver` (le nom du CSI driver), `volumeAttributes` (attributs passés au driver), `fsType`, `readOnly`, et `nodePublishSecretRef` (secret pour l'authentification)."
+  ],
+  "note": [
+    "À relier à la note « Filtering (2/2) : contraintes de volumes » (Scheduler) : c'est justement ce driver CSI, via l'objet CSIStorageCapacity, que le scheduler interroge pour savoir si un nœud peut réellement obtenir le volume demandé avant d'y placer le Pod."
+  ],
+  "refs": [
+    "https://kubernetes-csi.github.io/docs/",
+    "https://kubernetes-csi.github.io/docs/deploying.html",
+    "https://kubernetes.io/docs/concepts/storage/volumes/"
+  ]
 }
   ];
   DATA.forEach((o) => F.push(o));

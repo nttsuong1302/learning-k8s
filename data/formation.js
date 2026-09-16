@@ -83,6 +83,29 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-managed-k8s",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "Managed Kubernetes chez les cloud providers",
+  "lead": "Ce que le fournisseur cloud gère à ta place, ce qu'il te laisse gérer, et comment le lien avec l'infra cloud est fait techniquement.",
+  "body": [
+    "Suite de la note « Distributions Kubernetes » (point « control plane auto-géré vs délégué ») : les offres « clé-en-main » des clouds (EKS chez AWS, GKE chez Google Cloud, AKS chez Azure — cf. note « Kubernetes vanilla ») retirent l'exploitation du control plane de tes épaules."
+  ],
+  "points": [
+    "Géré par le fournisseur — kube-apiserver, etcd, kube-scheduler, kube-controller-manager : leur disponibilité, leurs mises à jour de version, leurs correctifs de sécurité, la HA entre zones… tout ce que tu ferais toi-même avec kubeadm (cf. notes « Installer un control plane » et « Fault tolérance du control plane »).",
+    "Ce qu'il te reste à gérer — en général les workers/node pools (taille, autoscaling, mises à jour), tes workloads (Deployments, Services…), le RBAC, la configuration réseau applicative (Ingress, NetworkPolicy…). Tu gardes une API conforme upstream, donc kubectl/manifests standards fonctionnent sans changement.",
+    "cloud-controller-manager — le composant qui « lets you link your cluster into your cloud provider's API, and separates out the components that interact with that cloud platform from components that only interact with your cluster ». Il embarque 3 contrôleurs : Node controller (annote/retire les Node selon l'état réel des instances cloud), Route controller (« configuring routes in the cloud […] so that containers on different nodes […] can communicate »), Service controller (« Services integrate with cloud infrastructure components such as managed load balancers, IP addresses, network packet filtering, and target health checking »).",
+    "Conséquence concrète — c'est le Service controller qui fait qu'un `Service` de type `LoadBalancer` sur un cluster managé provisionne automatiquement une vraie load balancer cloud (ELB/NLB, Google Cloud Load Balancer, Azure Load Balancer…), sans action manuelle côté infra cloud."
+  ],
+  "note": [
+    "Le compromis : moins d'opérations (pas de certificats kubeadm à renouveler, pas de quorum etcd à surveiller toi-même), mais moins de contrôle fin sur le control plane (version exacte, flags d'apiserver, timing des upgrades) — à mettre en balance avec les critères vus dans la note « Distributions Kubernetes »."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/setup/production-environment/turnkey-solutions/",
+    "https://kubernetes.io/docs/concepts/architecture/cloud-controller/"
+  ]
+},
+{
   "id": "f-j1-orchestrateur",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Fondamentaux",

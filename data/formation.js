@@ -234,6 +234,32 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-rke2-vs-rancher",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "RKE2 : la distribution, et sa différence avec Rancher",
+  "lead": "RKE2 installe UN cluster ; Rancher pilote PLUSIEURS clusters, RKE2 ou non — deux niveaux différents, à ne pas confondre.",
+  "body": [
+    "RKE2 est « Rancher's enterprise-ready next-generation Kubernetes distribution », « a fully conformant Kubernetes distribution that focuses on security and compliance within the U.S. Federal Government sector. » Il combine la facilité opérationnelle de K3s (installateur simple, services systemd) et l'alignement strict sur Kubernetes upstream de RKE1 — sans dépendre de Docker, contrairement à RKE1 (containerd est le runtime embarqué)."
+  ],
+  "points": [
+    "Sécurité/conformité, son vrai argument différenciant — configuration durcie permettant de passer le CIS Kubernetes Benchmark avec un minimum d'intervention, support FIPS 140-2, scan de CVE régulier via trivy.",
+    "Architecture — composants du control plane en Pods statiques gérés par le kubelet (comme avec kubeadm), containerd en runtime embarqué.",
+    "Installation & rôles — script `curl -sfL https://get.rke2.io | sh -` ; deux rôles de nœud, `server` (control plane, écoute sur le port 9345 pour l'enregistrement de nouveaux nœuds) et `agent` (worker, via `INSTALL_RKE2_TYPE=\"agent\"`). Maintenu par SUSE/Rancher.",
+    "Rancher, un niveau au-dessus — « Rancher is a Kubernetes management tool to deploy and run clusters anywhere and on any provider. » Il peut provisionner des clusters depuis des fournisseurs managés (EKS, GKE, AKS), monter de l'infra et y installer Kubernetes (via RKE2 ou K3s), ou importer des clusters existants — plus authentification/RBAC centralisés, monitoring/logs, Helm, Fleet (déploiement multi-cluster), CI/CD optionnel.",
+    "RKE2 n'est PAS obligatoire pour Rancher — Rancher est agnostique de la distribution. Mais il y a deux endroits où RKE2/K3s interviennent quand même : le serveur Rancher lui-même tourne sur un cluster Kubernetes (la doc recommande RKE2 ou K3s, en HA pour la prod), et RKE2 est l'une des distributions que Rancher peut provisionner pour les clusters qu'il gère."
+  ],
+  "note": [
+    "En une phrase : RKE2 = un moteur pour créer UN cluster ; Rancher = le tableau de bord qui peut piloter PLUSIEURS clusters, qu'ils soient RKE2 ou non — et qui, accessoirement, tourne lui-même sur un cluster RKE2/K3s."
+  ],
+  "refs": [
+    "https://docs.rke2.io/",
+    "https://docs.rke2.io/install/quickstart",
+    "https://ranchermanager.docs.rancher.com/v2.15/rancher-manager",
+    "https://ranchermanager.docs.rancher.com/getting-started/installation-and-upgrade"
+  ]
+},
+{
   "id": "f-j1-orchestrateur",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Fondamentaux",

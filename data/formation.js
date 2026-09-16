@@ -190,6 +190,7 @@ window.CKA.formation = window.CKA.formation || [];
   ],
   "note": [
     "etcd utilise Raft : il faut une majorité (n/2)+1 de membres vivants pour continuer à fonctionner. D'où la recommandation officielle : nombre impair de membres (ajouter un membre pour passer à un nombre pair n'apporte aucune tolérance en plus), et généralement 3 ou 5 en pratique (5 = bon compromis résilience/perf en écriture).",
+    "Le nombre de membres etcd est un choix de dimensionnement fixé au départ, pas un paramètre à faire varier au gré des besoins comme le nombre de workers : la FAQ etcd prévient explicitement que redimensionner à chaud est risqué — « If the cluster is in a state where it can't tolerate any more failures, adding a node before removing nodes is dangerous because if the new node fails to register with the cluster [...], quorum will be permanently lost. » Pour remplacer un membre, la règle est de retirer l'ancien avant d'ajouter le nouveau : « When replacing an etcd node, it's important to remove the member first and then add its replacement. »",
     "Important — les Pods déjà lancés ne s'arrêtent pas immédiatement : chaque kubelet continue de gérer les conteneurs déjà assignés à son nœud indépendamment de l'API server. Donc le trafic déjà en cours continue globalement de tourner ; ce qui s'arrête, c'est tout ce qui nécessite une décision/écriture côté control plane (nouveaux déploiements, self-healing avancé, scaling, mises à jour…).",
     "Pour limiter le risque : etcd en HA répartie sur plusieurs zones de panne, topologie stacked (etcd sur les mêmes nœuds que le control plane, plus simple) ou external (etcd sur des nœuds dédiés, meilleure isolation), et surtout — la doc insiste dessus — avoir un plan de sauvegarde des données etcd."
   ],
@@ -221,6 +222,33 @@ window.CKA.formation = window.CKA.formation || [];
     "https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/high-availability/",
     "https://kubernetes.io/docs/concepts/architecture/leases/",
     "https://kubernetes.io/docs/concepts/architecture/control-plane-node-communication/"
+  ]
+},
+{
+  "id": "f-j1-etcd-topology-install",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Control plane & etcd",
+  "title": "etcd : topologie stacked (local) vs external — étapes d'installation",
+  "lead": "Deux topologies possibles avec kubeadm, avec des étapes d'installation très différentes.",
+  "body": [
+    "Suite de la note « Fault tolérance du control plane » : kubeadm propose deux topologies pour placer etcd.",
+    "Stacked (local) — topologie par défaut : « This is the default topology in kubeadm. A local etcd member is created automatically on control plane nodes when using kubeadm init and kubeadm join --control-plane. » etcd tourne colocalisé avec kube-apiserver/kube-scheduler/kube-controller-manager, sur les mêmes nœuds. Avantage : « simpler to set up than a cluster with external etcd nodes, and simpler to manage for replication. » Inconvénient : « A stacked cluster runs the risk of failed coupling. If one node goes down, both an etcd member and a control plane instance are lost, and redundancy is compromised » — d'où la recommandation d'un minimum de 3 nœuds de control plane.",
+    "External — etcd sur des hôtes dédiés, séparés du control plane. Avantage : « This topology decouples the control plane and etcd member [...] losing a control plane instance or an etcd member has less impact. » Inconvénient : « This topology requires twice the number of hosts as the stacked HA topology » — minimum 3 hôtes control plane + 3 hôtes etcd = 6 nœuds. Étapes d'installation (guide dédié kubeadm) :"
+  ],
+  "points": [
+    "Sur chaque hôte etcd : configurer le kubelet comme gestionnaire des static pods (staticPodPath, cgroupDriver…)",
+    "Générer la CA etcd : `kubeadm init phase certs etcd-ca`",
+    "Générer par hôte les certificats serveur/peer/healthcheck-client/apiserver-etcd-client : `kubeadm init phase certs etcd-server|etcd-peer|etcd-healthcheck-client|apiserver-etcd-client --config=...`",
+    "Distribuer les certificats sur chaque hôte (ne garder que ca.crt/ca.key sur l'hôte d'origine)",
+    "Générer le manifeste static pod etcd sur chaque hôte : `kubeadm init phase etcd local --config=...`",
+    "Côté control plane, référencer ce cluster externe dans la ClusterConfiguration via le champ `etcd.external` (endpoints, caFile, certFile, keyFile)"
+  ],
+  "note": [
+    "Comparatif rapide : stacked = plus simple, moins de machines, mais panne couplée (control plane + etcd) ; external = plus résilient (découplé), mais deux fois plus d'hôtes à gérer."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/ha-topology/",
+    "https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/setup-ha-etcd-with-kubeadm/"
   ]
 },
 {

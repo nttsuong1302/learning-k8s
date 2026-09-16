@@ -131,6 +131,34 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-container-runtime",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "Container runtime : définition & CRI-O",
+  "lead": "Le logiciel qui exécute réellement les conteneurs sur chaque nœud — et un runtime pensé spécifiquement pour Kubernetes.",
+  "body": [
+    "« The container runtime is the software that is responsible for running containers. » Sur chaque nœud, c'est lui qui démarre les processus des conteneurs et s'interface avec les cgroups pour appliquer les limites de ressources.",
+    "Pourquoi on en a besoin : « You need a working container runtime on each Node in your cluster, so that the kubelet can launch Pods and their containers. » Sans lui, le kubelet ne peut littéralement rien démarrer. C'est un prérequis obligatoire que kubeadm n'installe PAS (voir note « kubeadm : ce qu'il fait / ne fait pas »).",
+    "Kubernetes ne sait pas exécuter de conteneurs lui-même : il délègue entièrement ça via un protocole standard, le CRI (Container Runtime Interface) — « the main gRPC protocol for the communication between the kubelet and Container Runtime ». Le kubelet est client gRPC, le runtime est le serveur en face. Cette séparation permet de changer de runtime sans recompiler Kubernetes."
+  ],
+  "points": [
+    "Runtimes officiellement documentés — containerd, CRI-O, Docker Engine (via l'adaptateur cri-dockerd), Mirantis Container Runtime.",
+    "CRI-O — « an implementation of the Kubernetes Container Runtime Interface (CRI) that will allow Kubernetes to directly launch and manage Open Container Initiative (OCI) containers ». Conçu spécifiquement pour Kubernetes (pas un outil généraliste comme containerd, qui sert aussi Docker et d'autres usages).",
+    "CRI-O délègue plutôt que de tout refaire — `runc` (runtime OCI) pour l'exécution des conteneurs, des bibliothèques dédiées pour images/stockage, CNI pour le réseau.",
+    "Gouvernance — projet CNCF graduated (le plus haut niveau de maturité CNCF), maintenu par une communauté incluant Red Hat, Intel, SUSE, IBM…",
+    "Alignement de version avec Kubernetes — CRI-O suit exactement le cycle de versions mineures de Kubernetes (`CRIO_VERSION=v1.32` avec `KUBERNETES_VERSION=v1.32`) et applique la même politique de compatibilité n-2 (version courante + 2 précédentes)."
+  ],
+  "note": [
+    "containerd/CRI-O sont déjà cités dans la note « Control plane » comme runtimes typiques côté worker — cette fiche détaille pourquoi ils existent et ce qui différencie CRI-O des runtimes plus généralistes."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/setup/production-environment/container-runtimes/",
+    "https://kubernetes.io/docs/concepts/architecture/cri/",
+    "https://cri-o.io/",
+    "https://github.com/cri-o/cri-o"
+  ]
+},
+{
   "id": "f-j1-orchestrateur",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Fondamentaux",

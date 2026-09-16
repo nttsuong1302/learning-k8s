@@ -68,7 +68,8 @@ kubernetes.io / cloudnative-pg.io, à celles déjà validées par l'utilisateur 
 **etcd.io**, **raft.github.io**, **external-secrets.io**, **developer.hashicorp.com/vault**,
 **kubespray.io** / **github.com/kubernetes-sigs/kubespray**, **kubernetes-csi.github.io**
 (doc officielle du SIG-Storage pour le développement/déploiement des CSI drivers), **sonobuoy.io** et
-**github.com/cncf/k8s-conformance** (doc officielle du programme de certification CNCF Certified Kubernetes).
+**github.com/cncf/k8s-conformance** (doc officielle du programme de certification CNCF Certified Kubernetes),
+**cri-o.io** / **github.com/cri-o/cri-o** (projet CNCF graduated, doc officielle du runtime CRI-O).
 Les mêmes principes de fidélité
 s'appliquent : ne rien inventer, chaque fiche porte ses `refs` vers la doc officielle du projet
 concerné.

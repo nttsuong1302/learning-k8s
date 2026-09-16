@@ -159,6 +159,29 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-network-solution",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "Solution réseau (CNI) : pourquoi c'est indispensable",
+  "lead": "Kubernetes impose un modèle réseau « plat » — mais ne l'implémente pas lui-même : c'est le rôle de la solution réseau (plugin CNI).",
+  "body": [
+    "Le modèle réseau officiel : « Each pod in a cluster gets its own unique cluster-wide IP address. » et « All pods can communicate with all other pods, whether they are on the same node or on different nodes. Pods can communicate with each other directly, without the use of proxies or address translation (NAT). »",
+    "Pourquoi ce modèle existe : « In older container systems, there was no automatic connectivity between containers on different hosts, and so it was often necessary to explicitly create links between containers, or to map container ports to host ports to make them reachable by containers on other hosts. This is not needed in Kubernetes ». Chaque Pod se comporte comme une VM ou une machine physique à part entière (IP propre, joignable directement), ce qui simplifie le service discovery, le load balancing, la migration…"
+  ],
+  "points": [
+    "Kubernetes impose CE modèle (le contrat : IP par Pod, pas de NAT entre Pods) mais ne l'implémente pas lui-même.",
+    "L'implémentation réelle revient au container runtime de chaque nœud, via des plugins CNI (Container Network Interface) : « The network model is implemented by the container runtime on each node. The most common container runtimes use Container Network Interface (CNI) plugins to manage their network and security capabilities. »",
+    "Conséquence très concrète (déjà vue à l'étape 4 de « Installer un control plane avec kubeadm ») : sans solution réseau installée après `kubeadm init`, les Pods — y compris CoreDNS — restent bloqués. C'est la seule pièce du puzzle qui n'est ni fournie par kubeadm, ni par le container runtime seul."
+  ],
+  "note": [
+    "À relier à la note « Container runtime : définition & CRI-O » : les deux sont des prérequis obligatoires que kubeadm ne pose pas à ta place — le container runtime pour exécuter les conteneurs, la solution réseau (CNI) pour qu'ils puissent se parler entre nœuds."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/concepts/cluster-administration/networking/",
+    "https://kubernetes.io/docs/concepts/services-networking/"
+  ]
+},
+{
   "id": "f-j1-orchestrateur",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Fondamentaux",

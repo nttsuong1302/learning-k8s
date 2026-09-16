@@ -174,6 +174,7 @@
           <button class="btn" data-start="practical">🧪 Pratique (${BANK.filter((q) => q.type === "practical").length})</button>
           <button class="btn" data-start="exam">🎲 Mode examen (aléatoire)</button>
           <button class="btn accent" data-techs>🧭 Parcourir les techniques (${TECHS.length})</button>
+          <button class="btn" data-search>🔍 Rechercher une question</button>
           <button class="btn" data-stats>📊 Mes résultats</button>
           <button class="btn ghost" data-reset>↺ Réinitialiser la progression</button>
         </div>
@@ -253,6 +254,75 @@
       <div class="stats-list">${rows}</div>
       ${notionBlock}
       <div class="qnav"><button class="btn ghost" data-reset>↺ Réinitialiser la progression</button></div>`;
+  }
+
+  // ============================ RECHERCHE ============================
+  let searchFilter = "";
+  let searchMatches = [];
+  const escRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  function highlightHTML(text, f) {
+    const escd = esc(text);
+    if (!f) return escd;
+    try {
+      const re = new RegExp(escRegex(esc(f)), "ig");
+      return escd.replace(re, (m) => `<mark>${m}</mark>`);
+    } catch (e) { return escd; }
+  }
+  function questionSearchText(q) {
+    const d = domainById(q.domain);
+    const notionLabels = notionsFor(q).map((id) => (NOTIONS.find((n) => n.id === id) || {}).label).join(" ");
+    const parts = [
+      q.q, q.title, q.scenario, q.explain, q.ref,
+      q.choices && q.choices.join(" "),
+      q.tasks && q.tasks.join(" "),
+      q.en && q.en.q, q.en && q.en.choices && q.en.choices.join(" "),
+      d && d.name, d && d.short,
+      notionLabels,
+    ];
+    return parts.filter(Boolean).join(" ");
+  }
+  function searchCardHTML(q, i, f) {
+    const d = domainById(q.domain);
+    const raw = q.type === "theory" ? tr(q, "q") : (q.title + " — " + q.scenario);
+    const snippet = raw.length > 170 ? raw.slice(0, 170) + "…" : raw;
+    return `<button class="tech-card search-card" data-search-open="${i}">
+      <span class="tc-title">
+        <span class="tag" style="--c:${d.color}">${d.icon} ${esc(d.short)}</span>
+        <span class="tag type-${q.type}">${q.type === "theory" ? "Théorie" : "Pratique"}</span>
+        <span class="tag diff-${q.difficulty}">${q.difficulty}</span>
+      </span>
+      <span class="tc-sum">${highlightHTML(snippet, f)}</span>
+    </button>`;
+  }
+  function renderSearch() {
+    const f = searchFilter.trim();
+    let resultsHTML = `<p class="muted">Tape au moins 2 caractères pour chercher parmi les ${BANK.length} questions (objet Kubernetes, commande, domaine…).</p>`;
+    searchMatches = [];
+    if (f.length >= 2) {
+      const fl = f.toLowerCase();
+      searchMatches = BANK.filter((q) => questionSearchText(q).toLowerCase().includes(fl));
+      resultsHTML = searchMatches.length
+        ? `<p class="muted" style="margin:0 0 12px">${searchMatches.length} résultat${searchMatches.length > 1 ? "s" : ""}</p>
+           <div class="search-results">${searchMatches.map((q, i) => searchCardHTML(q, i, f)).join("")}</div>`
+        : `<p class="muted">Aucune question ne correspond à « ${esc(f)} ».</p>`;
+    }
+    app.innerHTML = `
+      <div class="qtop">
+        <button class="btn ghost sm" data-home>← Accueil</button>
+        <div class="qtitle">🔍 Rechercher une question</div>
+        <div class="qcount">${BANK.length}</div>
+      </div>
+      <p class="muted" style="margin:2px 0 14px">Cherche par mot-clé : un objet Kubernetes (Pod, PVC, Ingress…), une commande (kubectl drain, crictl…), un domaine ou un terme de la question.</p>
+      <input class="search" id="qSearch" placeholder="🔍 Ex. RBAC, drain, PVC, etcd, affinity…" value="${esc(searchFilter)}">
+      ${resultsHTML}`;
+    const s = $("#qSearch");
+    s.focus(); s.setSelectionRange(s.value.length, s.value.length);
+    s.addEventListener("input", () => { searchFilter = s.value; const pos = s.selectionStart; renderSearch(); const n = $("#qSearch"); n.focus(); n.setSelectionRange(pos, pos); });
+  }
+  function openSearchResult(i) {
+    if (!searchMatches.length) return;
+    session = { title: "🔍 Résultats de recherche", list: searchMatches.slice(), i, clusters: {}, terms: {} };
+    renderQuestion();
   }
 
   // ============================ TECHNIQUES ============================
@@ -500,7 +570,10 @@
     const lg = t.closest("[data-lang]");
     if (lg) { lang = lg.getAttribute("data-lang"); localStorage.setItem("cka-lang", lang); if (session) renderQuestion(); else renderHome(); return; }
     if (t.closest("[data-techs]")) { renderTechIndex(); return; }
+    if (t.closest("[data-search]")) { renderSearch(); return; }
     if (t.closest("[data-stats]")) { renderStats(); return; }
+    const so = t.closest("[data-search-open]");
+    if (so) { openSearchResult(parseInt(so.getAttribute("data-search-open"), 10)); return; }
     if (t.closest("[data-tech-index]")) { renderTechIndex(); return; }
     const to = t.closest("[data-tech-open]");
     if (to) { renderTechReader(parseInt(to.getAttribute("data-tech-open"), 10)); return; }

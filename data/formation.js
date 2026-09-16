@@ -230,6 +230,31 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-coredns",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "CoreDNS : le DNS interne de Kubernetes",
+  "lead": "Ce qui permet aux Pods de se trouver par nom plutôt que par IP.",
+  "body": [
+    "« kubelet configures Pods' DNS so that running containers can look up Services by name rather than IP. » CoreDNS est le serveur DNS « cluster » déployé par défaut qui fait ces résolutions."
+  ],
+  "points": [
+    "Déploiement — lancé automatiquement comme addon du cluster (voir la phase `addon` dans la note « kubeadm : ce qu'il fait »), tourne comme un Deployment Kubernetes classique, exposé via un Service nommé `kube-dns` (compatibilité historique avec l'ancien DNS de Kubernetes) ; son IP est passée au kubelet via `--cluster-dns=<ip>`.",
+    "Services normaux — enregistrement `my-svc.my-namespace.svc.cluster.local`, résout vers la ClusterIP du Service.",
+    "Services headless (sans ClusterIP) — même format de nom, mais résout vers TOUTES les IPs des Pods sélectionnés par le Service.",
+    "Pods — `<ip-avec-tirets>.<namespace>.pod.cluster.local` (ex : `172-17-0-3.default.pod.cluster.local`).",
+    "Ports nommés — enregistrements SRV : `_port-name._port-protocol.my-svc.my-namespace.svc.cluster.local`.",
+    "Configuration côté Pod — le kubelet écrit automatiquement le `/etc/resolv.conf` de chaque Pod : `nameserver <ip-coredns>`, `search <namespace>.svc.cluster.local svc.cluster.local cluster.local`, `options ndots:5`. C'est ce `search` qui permet d'appeler juste `data` (même namespace) ou `data.prod` (autre namespace) sans taper le nom complet."
+  ],
+  "note": [
+    "Conséquence pratique déjà vue dans « Installer un control plane avec kubeadm » : sans solution réseau (CNI) installée, CoreDNS reste bloqué (Pending/ContainerCreating) — donc pas de résolution DNS possible tant que le CNI n'est pas en place."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/tasks/administer-cluster/dns-custom-nameservers/",
+    "https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/"
+  ]
+},
+{
   "id": "f-j1-cilium-rancher-cni",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Fondamentaux",

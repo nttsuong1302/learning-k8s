@@ -270,6 +270,34 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-kubeadm",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Control plane & etcd",
+  "title": "kubeadm : à quoi ça sert (et ce qui n'est pas dans son périmètre)",
+  "lead": "L'outil officiel pour bootstrapper un cluster « best-practice » — rien de plus, rien de moins.",
+  "body": [
+    "kubeadm est « a tool built to provide kubeadm init and kubeadm join as best-practice \"fast paths\" for creating Kubernetes clusters ».",
+    "Sa promesse est volontairement limitée : « kubeadm performs the actions necessary to get a minimum viable cluster up and running. By design, it cares only about bootstrapping, not about provisioning machines. » C'est pour ça que dans la note « Kubernetes vanilla », kubeadm reste l'outil de référence du cluster « auto-géré » — et que Kubespray (voir note dédiée) s'appuie dessus (ou l'automatise) pour aller plus loin, à l'échelle de plusieurs machines."
+  ],
+  "points": [
+    "kubeadm init génère la chaîne de certificats du cluster (phase `certs`) — CA Kubernetes, CA etcd, CA front-proxy, certificats de kube-apiserver, certificats client du kubelet, certificats etcd, clé de signature des service accounts.",
+    "kubeadm init configure et démarre le kubelet sur le nœud (phase `kubelet-start`) — et `kubeadm join` fait l'équivalent sur chaque nœud rejoint. Nuance importante : il n'installe PAS le binaire kubelet lui-même, qui doit être pré-installé sur la machine (cf. prérequis dans « Installer un control plane avec kubeadm »).",
+    "kubeadm init déploie etcd (membre local ou externe) et les composants du control plane (apiserver, controller-manager, scheduler) en Pods statiques (phases `etcd` et `control-plane`).",
+    "kubeadm join fournit un moyen simple de rattacher un worker (ou un nœud control-plane supplémentaire en HA) au cluster, via un bootstrap token généré par `kubeadm init`/`kubeadm token`.",
+    "kubeadm installe aussi CoreDNS et kube-proxy automatiquement (phase `addon`) — seul le plugin réseau des Pods (CNI) reste à installer manuellement, voir l'étape 4 de « Installer un control plane avec kubeadm ».",
+    "kubeadm upgrade fait monter de version un cluster déjà initialisé ; kubeadm certs et kubeadm token gèrent certificats et tokens après coup ; kubeadm reset annule ce que `init`/`join` a fait sur un hôte."
+  ],
+  "note": [
+    "Ce que kubeadm NE fait PAS, à dessein (« it cares only about bootstrapping, not about provisioning machines ») : créer les machines/VMs, configurer l'infrastructure réseau sous-jacente — le plugin CNI reste une installation manuelle —, et installer le container runtime sur les machines, un prérequis à poser toi-même avant `kubeadm init`/`join`. Il ne gère pas non plus les addons « nice-to-have » comme le Dashboard ou le monitoring (« installing various nice-to-have addons […] is not in scope »)."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/reference/setup-tools/kubeadm/",
+    "https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/",
+    "https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-init-phase/",
+    "https://kubernetes.io/docs/setup/production-environment/container-runtimes/"
+  ]
+},
+{
   "id": "f-j1-control-plane-install",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Control plane & etcd",

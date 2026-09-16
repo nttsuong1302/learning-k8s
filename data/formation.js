@@ -131,6 +131,34 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-thanos",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "Thanos",
+  "lead": "L'extension la plus courante de Prometheus sur Kubernetes, pour dépasser ses limites natives de rétention et de vue globale.",
+  "body": [
+    "Thanos est « open source, highly available Prometheus setup with long term storage capabilities. » Ce n'est pas un outil Kubernetes en soi, mais l'extension la plus répandue de Prometheus dans ce contexte."
+  ],
+  "points": [
+    "Global Query View — interroger les métriques à travers plusieurs serveurs Prometheus (et plusieurs clusters) comme une seule source.",
+    "Stockage long terme — Prometheus seul a une rétention courte par design ; Thanos l'étend indéfiniment via du stockage objet (S3, GCS, Azure Blob, Swift, Tencent COS).",
+    "Haute disponibilité — architecture distribuée, plus résiliente qu'un Prometheus unique.",
+    "Sidecar — se connecte à Prometheus, lit ses données pour les requêtes et/ou les upload vers le stockage cloud.",
+    "Store Gateway — sert les métriques historiques depuis le stockage objet, même API gRPC que le Sidecar.",
+    "Querier/Query — implémente l'API v1 de Prometheus, agrège les données de tous les composants sous-jacents (point d'entrée pour Grafana, par exemple).",
+    "Compactor — compacte, downsample et applique la rétention sur les données du bucket cloud.",
+    "Receiver — reçoit les données via le « remote write » de Prometheus, les expose et/ou les upload.",
+    "Ruler/Rule — évalue règles/alertes quand il faut une vision globale ou une rétention au-delà d'une seule instance Prometheus."
+  ],
+  "note": [
+    "Statut CNCF Incubating — un cran en dessous de CRI-O et Cilium (Graduated, voir notes dédiées), licence Apache 2.0, fondé initialement par Improbable. Sujet plus proche de l'observabilité que de l'admin cluster pur — hors périmètre strict CKA, mais utile en contexte réel."
+  ],
+  "refs": [
+    "https://thanos.io/",
+    "https://thanos.io/tip/thanos/quick-tutorial.md/"
+  ]
+},
+{
   "id": "f-j1-container-runtime",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Fondamentaux",

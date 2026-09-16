@@ -74,7 +74,8 @@ kubernetes.io / cloudnative-pg.io, à celles déjà validées par l'utilisateur 
 de CNI comme overlay vs native routing), **docs.cilium.io** / **www.cncf.io** (doc officielle du CNI
 Cilium et statut de maturité CNCF), **docs.rke2.io** (doc officielle de RKE2, la distribution
 Kubernetes derrière Rancher), **ranchermanager.docs.rancher.com** (doc officielle de Rancher,
-la plateforme de gestion multi-cluster).
+la plateforme de gestion multi-cluster), **thanos.io** (doc officielle du projet CNCF Incubating
+qui étend Prometheus — rétention long terme, HA, vue globale).
 Les mêmes principes de fidélité
 s'appliquent : ne rien inventer, chaque fiche porte ses `refs` vers la doc officielle du projet
 concerné.

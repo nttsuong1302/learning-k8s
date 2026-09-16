@@ -56,8 +56,12 @@ de navigation que les Techniques).
 
 Modèle d'une fiche :
 ```js
-{ id, day, section, title, lead, body: [...], points: [...]?, note: [...]?, refs: [...] }
+{ id, day, section, title, lead, diagram: "img/...svg"?, body: [...], points: [...]?, note: [...]?, refs: [...] }
 ```
+
+`diagram` (optionnel) pointe vers un SVG statique dans `img/` (palette du site, pas de bibliothèque externe),
+affiché sous le `lead` dans le lecteur de fiche. Il visualise des faits déjà sourcés dans la fiche (ou dans une
+fiche liée) — ce n'est pas une source en soi, donc les `refs` de la fiche restent celles qui justifient le contenu.
 
 Pour cette rubrique uniquement, les sources officielles autorisées s'étendent au-delà de
 kubernetes.io / cloudnative-pg.io, à celles déjà validées par l'utilisateur dans ses notes :
@@ -142,7 +146,7 @@ data/
   practical.js        # scénarios pratiques (+ objectifs de validation)
   techniques.js       # catalogue de techniques à parcourir
   cnpg.js             # techniques + QCM CloudNativePG (doc officielle)
-  formation.js         # notes de formation (pas de QCM) — Jour 1 : vanilla/Kubespray, control plane, etcd/Raft, scheduler filtering & scoring, Secrets/ESO/Vault
+  formation.js        # notes de formation (pas de QCM) — Jour 1 : vanilla/Kubespray, control plane, etcd/Raft, scheduler filtering & scoring, Secrets/ESO/Vault
   explain-rich.js     # surcharge : explications en paragraphes (par id)
   translations-en.js  # surcharge : traductions EN des questions (par id)
 ```

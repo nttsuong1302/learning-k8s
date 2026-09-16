@@ -177,6 +177,7 @@ mark { background: var(--warn); color: #241a02; border-radius: 3px; padding: 0 2
 .doc-link { display: inline-block; }
 .doc-links { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 6px; }
 .qcard > p { line-height: 1.6; margin: 0 0 12px; }
+.formation-diagram { display: block; width: 100%; height: auto; margin: 4px 0 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg2); }
 
 /* ---------- Résultats ---------- */
 .insight { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }

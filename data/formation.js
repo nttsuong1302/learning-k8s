@@ -174,6 +174,27 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-schema-infra",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Control plane & etcd",
+  "title": "Schéma : infrastructure d'un cluster Kubernetes",
+  "lead": "Vue d'ensemble control plane / nœud — qui parle à qui, et qui fait quoi.",
+  "diagram": "img/formation-control-plane.svg",
+  "body": [
+    "Reprend les composants déjà détaillés dans la note « Control plane » et leur pendant côté nœud (kubelet, kube-proxy, container runtime — déjà cité dans la note « 📌 À retenir » de cette même fiche « Control plane ») — ici en schéma pour visualiser les relations entre eux.",
+    "L'idée à retenir du schéma : kube-apiserver est le SEUL point d'entrée du cluster. Tous les autres composants (scheduler, controller-manager, cloud-controller-manager, kubelet sur chaque nœud) ne parlent qu'à lui — jamais directement entre eux, ni directement à etcd (seul kube-apiserver lit/écrit dans etcd)."
+  ],
+  "points": [
+    "Control plane — kube-apiserver (hub central), etcd (source de vérité), kube-scheduler (place les Pods), kube-controller-manager (boucles de contrôle), cloud-controller-manager (optionnel, lien avec le cloud).",
+    "Nœud (worker) — kubelet (fait tourner les Pods, dialogue avec l'apiserver : reçoit les PodSpecs, remonte le statut), kube-proxy (règles réseau des Services), container runtime (démarre les conteneurs des Pods).",
+    "Un cluster a généralement plusieurs nœuds workers (d'où le « × N » sur le schéma) — et peut avoir plusieurs nœuds control-plane en HA (voir note « Fault tolérance du control plane »)."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/concepts/overview/components/",
+    "https://kubernetes.io/docs/concepts/architecture/"
+  ]
+},
+{
   "id": "f-j1-control-plane",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Control plane & etcd",

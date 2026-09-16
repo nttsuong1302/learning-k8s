@@ -411,6 +411,7 @@
     if (i < 0) i = 0; if (i > FORMATION.length - 1) i = FORMATION.length - 1;
     const n = FORMATION[i];
     const body = (n.body || []).map((p) => `<p>${esc(p)}</p>`).join("");
+    const diagram = n.diagram ? `<img class="formation-diagram" src="${esc(n.diagram)}" alt="${esc(n.title)}" loading="lazy">` : "";
     const points = (n.points || []).length ? `<ul class="tech-points">${n.points.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>` : "";
     const note = (n.note || []).length ? `<div class="synth"><b>📌 À retenir</b>${n.note.map((p) => `<p>${esc(p)}</p>`).join("")}</div>` : "";
     const refs = (n.refs || []).map((r) => {
@@ -428,6 +429,7 @@
       <div class="qcard">
         <h2 class="qtext">${esc(n.title)}</h2>
         <p class="scenario"><b>${esc(n.lead)}</b></p>
+        ${diagram}
         ${body}
         ${points}
         ${note}

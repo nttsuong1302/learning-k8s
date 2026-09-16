@@ -106,6 +106,31 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-sonobuoy",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "Sonobuoy",
+  "lead": "L'outil de diagnostic qui vérifie qu'un cluster est réellement conforme à la spec Kubernetes — et la techno derrière la certification CNCF.",
+  "body": [
+    "Sonobuoy est « a diagnostic tool that makes it easier to understand the state of a Kubernetes cluster by running a choice of configuration tests in an accessible and non-destructive manner ». Projet open source porté par VMware — ce n'est pas un outil du projet Kubernetes lui-même.",
+    "Le lien concret avec la certification : le dépôt officiel du programme CNCF Certified Kubernetes le confirme noir sur blanc — « For a number of years Sonobuoy has been used to generate both the e2e.log and junit_01.xml », les fichiers de résultats requis pour obtenir le badge « CNCF Certified Kubernetes »."
+  ],
+  "points": [
+    "Conformance testing — vérifie que le cluster respecte la spec Kubernetes officielle (les tests e2e de conformité).",
+    "Debugging de workloads — génère des diagnostics accessibles pour un workload qui pose problème.",
+    "Tests personnalisés — extensible via un système de plugins.",
+    "Non-destructif — les tests tournent sans modifier durablement l'état du cluster.",
+    "Workflow de base : `sonobuoy run --wait` (lance les tests et attend la fin) → `sonobuoy status` (état de chaque plugin) → `sonobuoy retrieve` (récupère les résultats) → `sonobuoy results` (liste les tests en échec) → `sonobuoy logs` (logs des conteneurs Sonobuoy) → `sonobuoy delete --wait` (nettoie les ressources créées)."
+  ],
+  "note": [
+    "À ne pas confondre avec kubeadm/Kubespray (notes précédentes) : ceux-là installent un cluster, Sonobuoy vérifie après coup qu'un cluster déjà en place se comporte comme un vrai Kubernetes conforme."
+  ],
+  "refs": [
+    "https://sonobuoy.io/docs/latest/",
+    "https://github.com/cncf/k8s-conformance"
+  ]
+},
+{
   "id": "f-j1-orchestrateur",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Fondamentaux",

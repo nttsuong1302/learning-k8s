@@ -207,6 +207,29 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-network-policies",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "NetworkPolicy : le firewall au niveau des Pods",
+  "lead": "Par défaut, tout Pod parle à tout le monde. NetworkPolicy change ça — mais seulement si le CNI sait l'appliquer.",
+  "body": [
+    "« If you want to control traffic flow at the IP address or port level (OSI layer 3 or 4), NetworkPolicies allow you to specify rules for traffic flow within your cluster, and also between Pods and the outside world. » C'est un « application-centric construct which allow you to specify how a pod is allowed to communicate with various network \"entities\" over the network. »",
+    "Comportement par défaut, SANS NetworkPolicy : un Pod est non-isolé — toutes les connexions entrantes (ingress) ET sortantes (egress) sont autorisées. Du tout-ouvert."
+  ],
+  "points": [
+    "Une fois qu'un Pod est sélectionné par une NetworkPolicy — « A pod is isolated for ingress if there is any NetworkPolicy that both selects the pod and has \"Ingress\" in its policyTypes. » Seules les connexions explicitement autorisées par la liste `ingress` (+ le trafic venant du nœud du Pod) passent ensuite. Même logique côté `egress`.",
+    "C'est du deny-by-default localisé — dès qu'une policy sélectionne le Pod, pas globalement pour tout le cluster.",
+    "Prérequis crucial (relié à la note « Solution réseau (CNI) ») : « Network policies are implemented by the network plugin. To use network policies, you must be using a networking solution which supports NetworkPolicy. Creating a NetworkPolicy resource without a controller that implements it will have no effect. » — Kubernetes stocke juste l'objet, c'est le CNI qui doit l'appliquer réellement (Calico, Cilium le font).",
+    "Structure de base — `podSelector` (quels Pods la policy cible), `policyTypes` (Ingress et/ou Egress), `ingress`/`egress` (listes de règles `from`/`to` + `ports`)."
+  ],
+  "note": [
+    "À relier à « Native routing vs overlay » et « Cilium » : le choix du CNI n'affecte pas que le routage, il détermine aussi si NetworkPolicy fonctionne du tout — et jusqu'à quel niveau (Cilium va jusqu'au L7, au-delà du simple L3/L4 de la spec NetworkPolicy standard)."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/concepts/services-networking/network-policies/"
+  ]
+},
+{
   "id": "f-j1-cilium-rancher-cni",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Fondamentaux",

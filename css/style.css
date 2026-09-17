@@ -16,6 +16,7 @@
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
 body {
   background: radial-gradient(1200px 600px at 70% -10%, #1b2b4a 0%, var(--bg) 55%) fixed;
   color: var(--text);
@@ -156,7 +157,12 @@ a { color: #7fb0ff; }
 .btn.accent:hover { background: #0b6072; }
 .search { width: 100%; padding: 12px 14px; margin-bottom: 18px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; color: var(--text); font-size: .95rem; }
 .search:focus { outline: none; border-color: var(--primary); }
-.tech-group { margin-bottom: 22px; }
+.formation-toc { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 22px; padding: 12px; background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; }
+.toc-pill { display: inline-flex; align-items: center; gap: 5px; padding: 5px 11px; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; color: var(--text); text-decoration: none; font-size: .82rem; transition: border-color .15s, background .15s; }
+.toc-pill:hover { border-color: var(--primary); background: var(--panel2); }
+.toc-pill span { color: var(--muted); }
+.tech-index { scroll-margin-top: 10px; }
+.tech-group { margin-bottom: 22px; scroll-margin-top: 14px; }
 .tech-group h3 { font-size: .95rem; color: var(--c); border-bottom: 1px solid var(--line); padding-bottom: 6px; margin: 0 0 12px; }
 .tech-group h3 span { color: var(--muted); font-weight: 400; }
 .tech-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }

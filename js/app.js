@@ -389,10 +389,13 @@
     const match = (n) => !f || (n.title + " " + n.lead + " " + n.body.join(" ") + " " + (n.points || []).join(" ")).toLowerCase().includes(f);
     const sections = [];
     FORMATION.forEach((n) => { if (!sections.includes(n.section)) sections.push(n.section); });
+    const visibleSections = sections.filter((sec) => FORMATION.some((n) => n.section === sec && match(n)));
+    const toc = visibleSections.length > 1 ? `<nav class="formation-toc">${visibleSections.map((sec, i) => `<a class="toc-pill" href="#fsec-${i}">${esc(sec)} <span>${FORMATION.filter((n) => n.section === sec && match(n)).length}</span></a>`).join("")}</nav>` : "";
     const groups = sections.map((sec) => {
       const list = FORMATION.filter((n) => n.section === sec && match(n));
       if (!list.length) return "";
-      return `<div class="tech-group"><h3>${esc(sec)} <span>${list.length}</span></h3><div class="tech-list">${list.map(formationCardHTML).join("")}</div></div>`;
+      const i = visibleSections.indexOf(sec);
+      return `<div class="tech-group" id="fsec-${i}"><h3>${esc(sec)} <span>${list.length}</span></h3><div class="tech-list">${list.map(formationCardHTML).join("")}</div></div>`;
     }).join("");
     app.innerHTML = `
       <div class="qtop">
@@ -402,6 +405,7 @@
       </div>
       <p class="muted" style="margin:2px 0 14px">Tes notes de formation Kubernetes, organisées et sourcées — pas de QCM ici, juste de la lecture.</p>
       <input class="search" id="formationSearch" placeholder="🔍 Filtrer (ex. etcd, scheduler, secrets, vault…)" value="${esc(formationFilter)}">
+      ${toc}
       <div class="tech-index">${groups || '<p class="muted">Aucune note ne correspond.</p>'}</div>`;
     const s = $("#formationSearch");
     s.addEventListener("input", () => { formationFilter = s.value; const pos = s.selectionStart; renderFormationIndex(); const n = $("#formationSearch"); n.focus(); n.setSelectionRange(pos, pos); });

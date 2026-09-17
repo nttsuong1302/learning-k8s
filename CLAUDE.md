@@ -75,7 +75,8 @@ de CNI comme overlay vs native routing), **docs.cilium.io** / **www.cncf.io** (d
 Cilium et statut de maturité CNCF), **docs.rke2.io** (doc officielle de RKE2, la distribution
 Kubernetes derrière Rancher), **ranchermanager.docs.rancher.com** (doc officielle de Rancher,
 la plateforme de gestion multi-cluster), **thanos.io** (doc officielle du projet CNCF Incubating
-qui étend Prometheus — rétention long terme, HA, vue globale).
+qui étend Prometheus — rétention long terme, HA, vue globale), **github.com/NetApp/trident**
+et **docs.portworx.com** (doc officielle de deux provisioners CSI tiers cités en exemple).
 Les mêmes principes de fidélité
 s'appliquent : ne rien inventer, chaque fiche porte ses `refs` vers la doc officielle du projet
 concerné.

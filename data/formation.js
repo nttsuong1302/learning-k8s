@@ -875,16 +875,20 @@ window.CKA.formation = window.CKA.formation || [];
   "points": [
     "PersistentVolume (PV) — « a piece of storage in the cluster that has been provisioned by an administrator or dynamically provisioned using Storage Classes. It is a resource in the cluster just like a node is a cluster resource. » Son cycle de vie est indépendant de tout Pod qui l'utilise.",
     "PersistentVolumeClaim (PVC) — la demande faite par l'utilisateur, comme un Pod demande du CPU/mémoire, un PVC demande une taille et un access mode.",
-    "StorageClass — « provides a way for administrators to describe the classes of storage they offer. Different classes might map to quality-of-service levels, or to backup policies, or to arbitrary policies determined by the cluster administrators. » Kubernetes lui-même n'a pas d'avis sur ce que représentent ces classes — la doc compare ça aux « profiles » d'autres systèmes de stockage.",
-    "Champs clés d'une StorageClass — `provisioner` (quel plugin/CSI driver provisionne les PV, voir note « CSI »), `parameters` (config spécifique au provisioner), `reclaimPolicy` (Delete ou Retain après usage), `allowVolumeExpansion`, `volumeBindingMode` (quand le binding/provisioning se déclenche), `allowedTopologies`.",
-    "Le nom d'une StorageClass compte — c'est ce que l'utilisateur indique dans son PVC (`storageClassName`) pour demander cette classe précise."
+    "Les 4 access modes officiels — ReadWriteOnce (RWO, lecture-écriture par un seul nœud), ReadOnlyMany (ROX, lecture seule par plusieurs nœuds), ReadWriteMany (RWX, lecture-écriture par plusieurs nœuds), ReadWriteOncePod (RWOP, lecture-écriture par un seul Pod — plus restrictif que RWO, qui autorise plusieurs Pods sur le même nœud).",
+    "StorageClass — « provides a way for administrators to describe the classes of storage they offer. Different classes might map to quality-of-service levels, or to backup policies, or to arbitrary policies determined by the cluster administrators. » Kubernetes lui-même n'a pas d'avis sur ce que représentent ces classes — la doc compare ça aux « profiles » d'autres systèmes de stockage. « This provisioning is based on StorageClasses: the PVC must request a storage class and the administrator must have created and configured that class » — au moins une StorageClass est donc nécessaire pour satisfaire des PVC en provisioning dynamique.",
+    "Champs d'une StorageClass, et ce qui est VRAIMENT obligatoire — seul `provisioner` doit être spécifié (« This field must be specified. »). `parameters` (config spécifique au provisioner) et `reclaimPolicy` (défaut : `Delete` si absent) sont documentés ensemble mais restent optionnels ; `allowVolumeExpansion`, `volumeBindingMode` (défaut : `Immediate`) et `allowedTopologies` aussi.",
+    "Le nom d'une StorageClass compte — c'est ce que l'utilisateur indique dans son PVC (`storageClassName`) pour demander cette classe précise.",
+    "Provisioners tiers, deux exemples concrets — NetApp Trident (« designed from the ground up to help you meet your containerized applications' persistence demands using industry-standard interfaces, such as the Container Storage Interface (CSI) » ; supporte ONTAP, Element/SolidFire, Azure NetApp Files, Google Cloud NetApp Volumes, Amazon FSx for ONTAP) et Portworx (« Portworx implements a CSI driver that integrates with the Kubernetes storage framework, enabling dynamic provisioning, snapshotting, cloning, and volume expansion » ; va au-delà avec Portworx Backup et Disaster Recovery)."
   ],
   "note": [
-    "À relier à la note « CSI : définition & CSI driver » : le `provisioner` d'une StorageClass, c'est justement le CSI driver qui va créer le PV réel derrière la demande du PVC."
+    "Lien StorageClass ↔ CSI, très concret : le champ `provisioner` d'une StorageClass EST le nom du CSI driver à utiliser (ex. NetApp Trident ou Portworx). La chaîne complète : PVC → StorageClass → provisioner (= CSI driver, voir note « CSI : définition & CSI driver ») → PV créé."
   ],
   "refs": [
     "https://kubernetes.io/docs/concepts/storage/persistent-volumes/",
-    "https://kubernetes.io/docs/concepts/storage/storage-classes/"
+    "https://kubernetes.io/docs/concepts/storage/storage-classes/",
+    "https://github.com/NetApp/trident",
+    "https://docs.portworx.com/portworx-enterprise/operations/operate-kubernetes/storage-operations/csi"
   ]
 },
 {

@@ -80,7 +80,9 @@ et **docs.portworx.com** (doc officielle de deux provisioners CSI tiers cités e
 **github.com/container-storage-interface** (org officielle qui porte la spécification CSI elle-même),
 **istio.io** (doc officielle d'Istio, cité en exemple de mutating webhook pour l'injection de sidecar),
 **kyverno.io** (projet CNCF graduated, policy engine Kubernetes-native), **open-policy-agent.github.io**
-et **openpolicyagent.org** (doc officielle d'OPA Gatekeeper et du langage Rego, projet CNCF graduated).
+et **openpolicyagent.org** (doc officielle d'OPA Gatekeeper et du langage Rego, projet CNCF graduated),
+**12factor.net** (le manifeste The Twelve-Factor App, référence historique des pratiques cloud-native
+citée pour le facteur « Logs »).
 Les mêmes principes de fidélité
 s'appliquent : ne rien inventer, chaque fiche porte ses `refs` vers la doc officielle du projet
 concerné.

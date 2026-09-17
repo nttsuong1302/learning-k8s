@@ -505,6 +505,32 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-logging",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "Logs & observabilité : le 12-Factor App, l'écosystème, et les pièges de volumétrie",
+  "lead": "Pourquoi le SSH + `docker ps`/logs ne suffit plus, ce que Kubernetes fait (et ne fait pas) pour toi, et pourquoi la manière de logger a un vrai coût.",
+  "body": [
+    "Pourquoi on ne peut plus faire comme avant : se connecter en SSH sur une machine pour faire un `docker ps`/`crictl ps` puis lire les logs ne marche plus dès qu'on a des Pods répartis sur plein de nœuds — pas d'accès partagé, pas d'approche « cloud native ».",
+    "Le manifeste de référence, le 12-Factor App (facteur XI, « Logs ») : « A twelve-factor app never concerns itself with routing or storage of its output stream. It should not attempt to write to or manage logfiles. Instead, each running process writes its event stream, unbuffered, to stdout. » L'appli n'a qu'une seule responsabilité : écrire son flux sur la sortie standard ; router/stocker/archiver, c'est le rôle de l'environnement d'exécution — jamais de l'appli elle-même.",
+    "Ce que Kubernetes fait, précisément : « Kubernetes does not provide a native storage solution for log data. Instead, there are many logging solutions that integrate with Kubernetes. » Kubernetes capture bien le stdout/stderr de chaque conteneur (format standardisé « CRI logging format » entre le container runtime et le kubelet, qui gère aussi la rotation via `containerLogMaxSize`/`containerLogMaxFiles`) — mais l'agrégation, le stockage long terme et la recherche, ce n'est PAS fourni nativement."
+  ],
+  "points": [
+    "Pattern officiel : le node-level logging agent — un agent tourne sur CHAQUE nœud, collecte les logs des conteneurs et les transmet à un backend centralisé de stockage/analyse (c'est le modèle derrière Fluentd/Fluent Bit, Loki, etc.).",
+    "L'écosystème des stacks de logging (vu en formation) — Elastic Stack (Elasticsearch/Logstash/Kibana), historiquement la stack la plus répandue on-prem ; Grafana + Loki, très courant en contexte Kubernetes ; solutions natives des cloud providers (CloudWatch, Cloud Logging, Log Analytics) ; certaines distributions embarquent leur propre stack (ex. OpenShift) ou se branchent facilement sur le marché (ex. Rancher avec Syslog, Kafka, Splunk, Elasticsearch, Loki…). Ce point récapitule des repères de terrain donnés en formation, pas une liste officiellement documentée par kubernetes.io.",
+    "Ce qu'il faut monitorer sur un cluster vanilla — les composants système : kubelet, nœuds, kube-apiserver, kube-controller-manager, kube-scheduler (confirmé par la doc officielle) ; plus, côté addons (déployés comme des workloads), le réseau, le stockage, et tout ce qui est ingress/gateway/service mesh.",
+    "Le piège du bruit — les sondes de liveness/readiness qui loguent à chaque passage (« tout va bien » toutes les quelques secondes) noient les vrais signaux ; la bonne pratique de terrain est de filtrer par sévérité et de ne garder que ce qui sert vraiment au debug ou à l'audit utilisateur, pas la verbosité systématique.",
+    "Le piège du multi-ligne — beaucoup de systèmes de collecte comptent CHAQUE retour à la ligne comme un nouveau log : une stack trace Java de 20 lignes devient 20 « logs » séparés au lieu d'un seul événement, ce qui casse la lisibilité (impossible de relier début/fin) et peut faire exploser la facture d'un outil facturé au volume de lignes. Retour d'expérience cité en formation : un simple travail de reformatage/concaténation des stack traces Java a permis une réduction de 80 % de la facture Datadog sur une mission — anecdote professionnelle, pas un chiffre garanti ni sourcé officiellement."
+  ],
+  "note": [
+    "Deux points de cette fiche restent volontairement non sourcés officiellement ici (fidèle à la règle du projet : pas d'invention, mais pas de silence non plus sur ce qui vient de l'expérience de terrain du formateur) : le comparatif des stacks/distributions, et l'anecdote chiffrée Datadog. Le socle (12-Factor App + doc Kubernetes sur les logs) est, lui, entièrement sourcé."
+  ],
+  "refs": [
+    "https://12factor.net/logs",
+    "https://kubernetes.io/docs/concepts/cluster-administration/logging/"
+  ]
+},
+{
   "id": "f-j1-schema-infra",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Control plane & etcd",

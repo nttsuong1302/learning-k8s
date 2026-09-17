@@ -90,7 +90,8 @@ Prometheus Operator), **velero.io** (doc officielle de Velero, outil de backup/r
 Kubernetes), **www.cncf.io/projects** (pages officielles de statut de maturité CNCF par projet),
 **clomonitor.io** (doc officielle de l'outil de notation de la santé des projets CNCF),
 **github.com/kubernetes/autoscaler** (dépôt officiel du Vertical/Horizontal Pod Autoscaler),
-**goldilocks.docs.fairwinds.com** (doc officielle de Goldilocks).
+**goldilocks.docs.fairwinds.com** (doc officielle de Goldilocks), **metallb.io** (doc officielle de
+MetalLB, implémentation de Service LoadBalancer pour clusters bare metal).
 Les mêmes principes de fidélité
 s'appliquent : ne rien inventer, chaque fiche porte ses `refs` vers la doc officielle du projet
 concerné.

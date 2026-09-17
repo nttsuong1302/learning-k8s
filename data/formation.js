@@ -308,6 +308,30 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-loadbalancer-service",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "Service type LoadBalancer : cloud, MetalLB en on-prem, et pourquoi ça ne suffit pas",
+  "lead": "Un Service LoadBalancer, ça marche tout seul dans le cloud — sur un cluster on-prem, il faut lui trouver un remplaçant. Et de toute façon, il reste limité au niveau 4.",
+  "body": [
+    "Ce qui se passe quand tu déclares `type: LoadBalancer` (déjà vu dans la note « Managed Kubernetes ») : le cloud-controller-manager (via le Service controller) provisionne un vrai load balancer cloud (AWS ELB, Azure LB, Google Cloud LB…). Le provisioning est totalement asynchrone : l'`EXTERNAL-IP` du Service reste `<pending>` tant que le load balancer cloud n'est pas prêt. Une fois prêt, il redirige le trafic vers un NodePort ouvert sur les nœuds — de façon totalement transparente pour le workload."
+  ],
+  "points": [
+    "Sur un cluster on-prem, pas de cloud provider = pas de LoadBalancer automatique — le Service resterait bloqué en `<pending>` indéfiniment. MetalLB comble ce trou : « a load-balancer implementation for bare metal Kubernetes clusters, using standard routing protocols », qui permet aux Services LoadBalancer de fonctionner sans dépendre d'un cloud. Statut officiel : toujours en beta, mais « known to be stable and reliable » selon le projet lui-même.",
+    "Autres solutions on-prem citées en formation — HAProxy, F5 (passerelle via un boîtier Big IP externe au cluster), Cilium (déjà vu, capable de jouer ce rôle en plus de ses fonctions CNI). Limite commune à ces solutions non gérées nativement par Kubernetes : il faut un accès de gestion à ces load balancers (SSH ou interface d'admin) pour les configurer.",
+    "La vraie limite structurelle des Services — ils opèrent au niveau 4 (TCP/UDP) : « Services operate at Layer 4 and primarily handle TCP/UDP protocols. » Pas de routage par nom d'hôte, pas de routage par chemin d'URL, pas de terminaison TLS.",
+    "D'où l'Ingress — « An Ingress does not expose arbitrary ports or protocols » : c'est un objet dédié au HTTP/HTTPS (niveau 7), qui ajoute le routage par hostname, par path, et la terminaison TLS — exactement ce qui manque à un Service brut."
+  ],
+  "note": [
+    "Résumé de la chaîne : Service ClusterIP/NodePort (interne) → Service LoadBalancer (expose au niveau 4, via cloud ou MetalLB en on-prem) → Ingress (ajoute le niveau 7 par-dessus, un seul point d'entrée pour plusieurs services HTTP)."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/concepts/services-networking/service/",
+    "https://metallb.io/",
+    "https://kubernetes.io/docs/concepts/services-networking/ingress/"
+  ]
+},
+{
   "id": "f-j1-cilium-rancher-cni",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Fondamentaux",

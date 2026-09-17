@@ -159,6 +159,31 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-cncf-maturity",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "CNCF : niveaux de maturité, Landscape et CLOMonitor",
+  "lead": "Le repère utilisé en formation pour juger si une techno cloud native vaut le coup d'être adoptée — et un exemple concret d'auto-correction en direct (Velero).",
+  "body": [
+    "3 niveaux de maturité CNCF, officiels : Sandbox — « experimental projects not yet widely tested in production on the bleeding edge of technology » ; Incubating — « projects used successfully in production by a small number [of] users with a healthy pool of contributors » ; Graduated — « projects considered stable, widely adopted, and production ready, attracting thousands of contributors »."
+  ],
+  "points": [
+    "Exemples déjà croisés dans ces notes — Graduated : CRI-O, Cilium, Kyverno, OPA (Gatekeeper), Prometheus, Istio (12 juillet 2023), Linkerd (28 juillet 2021). Incubating : Thanos. Sandbox : Velero (accepté à la CNCF le 11 mars 2026, PAS graduated malgré son usage très répandu — une confusion faite puis corrigée en direct pendant la formation, en repartant vérifier sur le site officiel).",
+    "CNCF Landscape (landscape.cncf.io) — « a comprehensive categorical overview of projects and product offerings in the cloud native space », utile pour évaluer d'un coup d'œil quelles technos existent par catégorie et quel est leur niveau de maturité avant de les adopter dans son parc.",
+    "CLOMonitor — l'outil qui note objectivement la santé d'un projet CNCF sur 4 axes : documentation (README, guide de contribution, mainteneurs, changelog, gouvernance), licensing (licence approuvée, identifiants SPDX), bonnes pratiques (badge de sécurité, canaux communautaires, fréquence des releases, CLA), et sécurité (checks automatisés via OpenSSF Scorecard — revue de code, gestion des dépendances, releases signées, politique de sécurité)."
+  ],
+  "note": [
+    "Le point de vigilance soulevé en formation (retour d'expérience, pas une règle officielle) : le temps passé à un niveau de maturité varie énormément d'un projet à l'autre — Linkerd est passé Graduated relativement vite après son entrée en Incubating (2018→2021), alors qu'Istio, arrivé plus tard à la CNCF, y est resté moins longtemps avant de graduer (2022→2023). Le niveau de maturité seul ne dit donc pas tout sur l'ancienneté réelle ou la qualité d'un projet — croiser avec CLOMonitor et le Landscape reste utile."
+  ],
+  "refs": [
+    "https://www.cncf.io/projects/",
+    "https://www.cncf.io/projects/velero/",
+    "https://www.cncf.io/projects/linkerd/",
+    "https://www.cncf.io/projects/istio/",
+    "https://clomonitor.io/docs/topics/checks/"
+  ]
+},
+{
   "id": "f-j1-container-runtime",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Fondamentaux",
@@ -966,13 +991,18 @@ window.CKA.formation = window.CKA.formation || [];
     "3 cas d'usage officiels — disaster recovery (restaurer un cluster après une panne), migration de cluster (déplacer des ressources d'un cluster à l'autre, avec remapping de namespace possible), et snapshot pré-opération : « Velero is ideal for the disaster recovery use case, as well as for snapshotting your application state, prior to performing system operations on your cluster, like upgrades. »",
     "Architecture client-serveur — un serveur tourne dans (ou hors de) le cluster, piloté depuis un poste via une CLI. Chaque opération (backup à la demande, backup planifié, restore) est un objet Custom Resource (CRD) — encore un exemple du pattern Controller/CRD déjà vu.",
     "Stockage supporté — nativement le stockage objet cloud (S3 et compatibles, Azure Blob, Google Cloud Storage…) et les snapshots natifs des fournisseurs (EBS, Managed Disks…). En local/test, Velero se branche sur MinIO comme stockage S3-compatible auto-hébergé.",
-    "Backup planifié et filtré — syntaxe proche de Kubernetes (sélecteurs par labels), planification au format cron classique, possibilité d'inclure/exclure des namespaces et de filtrer les ressources cluster-scoped à embarquer ou non dans un backup."
+    "Backup planifié et filtré — syntaxe proche de Kubernetes (sélecteurs par labels), planification au format cron classique, possibilité d'inclure/exclure des namespaces et de filtrer les ressources cluster-scoped à embarquer ou non dans un backup.",
+    "Filtrage en détail — `--include-namespaces`/`--exclude-namespaces` (motifs glob), `--include-resources`/`--exclude-resources` par type de ressource, `--selector <clé>=<valeur>` (et `--or-selector` pour matcher plusieurs conditions), et une distinction explicite cluster-scoped vs namespace-scoped via `--include-cluster-scoped-resources`/`--include-namespace-scoped-resources`.",
+    "Resource policies — un mécanisme plus fin, défini dans une ConfigMap (référencée via `--resource-policies-configmap` ou `spec.resourcePolicy`) : « Velero provides resource policies […] to define fine-grained resource filters and volume handling rules », avec des sections `namespacedFilterPolicies`, `clusterScopedFilterPolicy`, `volumePolicies` et `includeExcludePolicy` dans un seul fichier YAML."
   ],
   "note": [
-    "Velero et etcdctl/etcdutl ne sont pas concurrents mais complémentaires : etcd(ctl/utl) restaure l'état ET la configuration du cluster lui-même (voir note dédiée), Velero se concentre sur les ressources + les données des volumes — et sert en plus d'outil de migration entre clusters, un usage qu'etcd seul ne couvre pas."
+    "Velero et etcdctl/etcdutl ne sont pas concurrents mais complémentaires : etcd(ctl/utl) restaure l'état ET la configuration du cluster lui-même (voir note dédiée), Velero se concentre sur les ressources + les données des volumes — et sert en plus d'outil de migration entre clusters, un usage qu'etcd seul ne couvre pas.",
+    "Statut CNCF, vérifié (voir note « CNCF : niveaux de maturité ») : Velero est en Sandbox — PAS Graduated — malgré son usage très répandu en formation/en entreprise. Un rappel utile que popularité perçue et maturité CNCF officielle ne coïncident pas toujours."
   ],
   "refs": [
-    "https://velero.io/docs/main/how-velero-works/"
+    "https://velero.io/docs/main/how-velero-works/",
+    "https://velero.io/docs/main/resource-filtering/",
+    "https://www.cncf.io/projects/velero/"
   ]
 },
 {

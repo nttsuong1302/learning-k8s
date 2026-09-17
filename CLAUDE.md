@@ -87,7 +87,8 @@ citée pour le facteur « Logs »), **grafana.com** (doc officielle de Grafana L
 **github.com/kubernetes-sigs/metrics-server** (doc officielle du projet Metrics Server), **prometheus.io**
 (doc officielle de Prometheus, projet CNCF graduated), **prometheus-operator.dev** (doc officielle du
 Prometheus Operator), **velero.io** (doc officielle de Velero, outil de backup/restore/migration
-Kubernetes).
+Kubernetes), **www.cncf.io/projects** (pages officielles de statut de maturité CNCF par projet),
+**clomonitor.io** (doc officielle de l'outil de notation de la santé des projets CNCF).
 Les mêmes principes de fidélité
 s'appliquent : ne rien inventer, chaque fiche porte ses `refs` vers la doc officielle du projet
 concerné.

@@ -864,6 +864,56 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-admission-webhooks",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Secrets & sécurité",
+  "title": "Admission webhooks : mutating vs validating, en pratique",
+  "lead": "Le dernier filtre avant etcd — et le mécanisme qui permet à des outils tiers (Istio, Vault...) de modifier ou bloquer tes ressources à la volée.",
+  "body": [
+    "Suite de la note « Admission controllers » vue en discussion : le flux exact, dans l'ordre — « Mutating admission webhooks are invoked first, and can modify objects sent to the API server to enforce custom defaults. After all object modifications are complete, and after the incoming object is validated by the API server, validating admission webhooks are invoked and can reject requests to enforce custom policies. » Donc : authentification → autorisation (RBAC) → admission MUTATING (intégrés + webhooks) → validation du schéma de l'objet par l'API server → admission VALIDATING (intégrés + webhooks) → persistance dans etcd.",
+    "Piège à connaître : un objet peut encore être modifié après être passé devant un mutating webhook (par un autre mutating webhook ensuite) — un webhook qui a besoin de voir l'état VRAIMENT final doit donc être un validating webhook, pas mutating."
+  ],
+  "points": [
+    "Configuration d'un webhook — un objet `MutatingWebhookConfiguration` ou `ValidatingWebhookConfiguration` définit : `rules` (quelles opérations/ressources déclenchent l'appel, ex. CREATE sur des pods), `clientConfig.service` (namespace + nom du Service qui expose le webhook), `caBundle` (le certificat CA pour valider le serveur du webhook), `timeoutSeconds` (10s par défaut).",
+    "Istio (sidecar injection) — « Sidecars can be automatically added to applicable Kubernetes pods using a mutating webhook admission controller provided by Istio. » En labellisant un namespace `istio-injection=enabled`, chaque nouveau Pod reçoit automatiquement le sidecar Envoy (le proxy qui gère le trafic réseau et le chiffrement mTLS du service mesh) — sans toucher aux manifests des Deployments.",
+    "Vault Agent Injector (déjà vu dans la note « Comment Vault interagit avec Kubernetes ») — « The Vault Agent Injector alters pod specifications to include Vault Agent containers that render Vault secrets to a shared memory volume. » Techniquement, c'est un « Kubernetes Mutation Webhook Controller » : il intercepte la création/mise à jour de Pods et ajoute un init container (pré-remplit les secrets) + un sidecar (les maintient à jour), pilotés par des annotations sur le Pod.",
+    "Autres cas d'usage courants (mentionnés en formation, à prendre comme illustrations pratiques plutôt que comme faits officiellement documentés ici) — des fournisseurs cloud ou des équipes plateforme utilisent des mutating webhooks pour imposer des bonnes pratiques par défaut sur TOUT ce qui transite (ex. forcer des requests/limits CPU/RAM absents, ou injecter automatiquement un label de coût/équipe pour du FinOps quand les développeurs ne l'ont pas mis eux-mêmes)."
+  ],
+  "note": [
+    "Le webhook lui-même n'est qu'un service HTTP que TU écris et déploies (le CA bundle doit correspondre à son certificat serveur) — Kubernetes ne fait qu'appeler ce service à chaque event matchant les `rules`. D'où l'existence de « policy engines » prêts à l'emploi (Kyverno, OPA Gatekeeper — voir note dédiée) pour éviter d'écrire ce service soi-même."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/",
+    "https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/",
+    "https://istio.io/latest/docs/setup/additional-setup/sidecar-injection/",
+    "https://developer.hashicorp.com/vault/docs/platform/k8s/injector"
+  ]
+},
+{
+  "id": "f-j1-policy-engines",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Secrets & sécurité",
+  "title": "Policy engines : Kyverno & OPA Gatekeeper",
+  "lead": "Plutôt que d'écrire ton propre admission webhook, ces outils jouent ce rôle pour toi — tu déclares des règles, pas du code.",
+  "body": [
+    "Suite de la note « Admission webhooks » : écrire et opérer son propre service de webhook (cert, déploiement, disponibilité...) est lourd pour chaque règle voulue. Les policy engines résolvent ça : ils SONT le webhook (mutating et/ou validating), et tu leur donnes des règles déclaratives plutôt que du code."
+  ],
+  "points": [
+    "Kyverno — « Secure, automate, and operate all your infrastructure and applications with YAML and CEL based policies. » Les policies s'écrivent en YAML (+ CEL, Common Expression Language) — pas de nouveau langage à apprendre. Projet CNCF Graduated.",
+    "OPA Gatekeeper — « a validating and mutating webhook that enforces CRD-based policies executed by Open Policy Agent, a policy engine for Cloud Native environments. » Gatekeeper = l'intégration Kubernetes-native d'OPA (policy engine généraliste, pas spécifique à K8s) : CRDs `ConstraintTemplate` (le modèle de règle) et `Constraint` (son application concrète), plus audit et mutation. OPA (le moteur sous-jacent) est un projet CNCF Graduated.",
+    "Rego, le langage d'OPA/Gatekeeper — « OPA is purpose built for policy evaluation and uses its declarative language Rego to reason about structured data like API requests, infrastructure-as-code files, and configuration data. » Inspiré de Datalog, étendu pour manipuler des documents structurés type JSON. C'est un langage purement déclaratif/syntaxique, pas un langage généraliste (pas de comparaison directe avec C/Java/Python) — la principale différence pratique avec Kyverno.",
+    "Exemples de règles typiques avec l'un ou l'autre — interdire la création de Pods dans certains namespaces, exiger des requests/limits sur tous les Pods, n'autoriser que des images venant d'un registre approuvé."
+  ],
+  "note": [
+    "La différence pratique la plus citée entre les deux : Kyverno reste en YAML/CEL (courbe d'apprentissage plus douce), OPA Gatekeeper impose d'apprendre Rego (plus expressif mais plus syntaxique, moins « évolué » qu'un langage généraliste)."
+  ],
+  "refs": [
+    "https://kyverno.io/",
+    "https://open-policy-agent.github.io/gatekeeper/website/docs/",
+    "https://www.openpolicyagent.org/docs/policy-language"
+  ]
+},
+{
   "id": "f-j1-pvc-storageclass",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Storage",

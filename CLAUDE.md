@@ -77,7 +77,10 @@ Kubernetes derrière Rancher), **ranchermanager.docs.rancher.com** (doc officiel
 la plateforme de gestion multi-cluster), **thanos.io** (doc officielle du projet CNCF Incubating
 qui étend Prometheus — rétention long terme, HA, vue globale), **github.com/NetApp/trident**
 et **docs.portworx.com** (doc officielle de deux provisioners CSI tiers cités en exemple),
-**github.com/container-storage-interface** (org officielle qui porte la spécification CSI elle-même).
+**github.com/container-storage-interface** (org officielle qui porte la spécification CSI elle-même),
+**istio.io** (doc officielle d'Istio, cité en exemple de mutating webhook pour l'injection de sidecar),
+**kyverno.io** (projet CNCF graduated, policy engine Kubernetes-native), **open-policy-agent.github.io**
+et **openpolicyagent.org** (doc officielle d'OPA Gatekeeper et du langage Rego, projet CNCF graduated).
 Les mêmes principes de fidélité
 s'appliquent : ne rien inventer, chaque fiche porte ses `refs` vers la doc officielle du projet
 concerné.

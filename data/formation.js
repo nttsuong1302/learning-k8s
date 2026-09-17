@@ -902,9 +902,11 @@ window.CKA.formation = window.CKA.formation || [];
     "Avant CSI, les pilotes de stockage étaient intégrés directement dans le code de Kubernetes (« in-tree »). CSI a changé ça : il permet à des fournisseurs de stockage tiers de « write and deploy plugins exposing new storage systems in Kubernetes without ever having to touch the core Kubernetes code »."
   ],
   "points": [
+    "Pourquoi l'in-tree n'était pas tenable — chaque fournisseur devait implémenter son plugin dans le code cœur de CHAQUE orchestrateur (Kubernetes, Mesos, Docker...) : prolifération ingérable (fournisseurs × orchestrateurs), mises à jour du plugin couplées au cycle de release de l'orchestrateur, et charge de maintenance hors du périmètre du projet. CSI standardise : un fournisseur « develop[s] a plugin once and have it work across a number of container orchestration (CO) systems ».",
     "CSI driver — implémente les services Identity, Node, et optionnellement Controller définis par la spécification CSI ; c'est une application conteneurisée, développée et déployée librement par chaque fournisseur de stockage.",
     "Controller Plugin — déployé en Deployment ou StatefulSet, sur n'importe quel nœud du cluster : « generally does not need direct access to the host and can perform all its operations through the Kubernetes API » (provisioning, attachment des volumes…).",
     "Node Plugin — déployé en DaemonSet, sur CHAQUE nœud du cluster, car il lui faut « direct access to the host for making block devices and/or filesystem mounts available to the Kubernetes kubelet ».",
+    "Les opérations CSI (RPC Controller/Node) — CreateVolume/DeleteVolume (provisionner/déprovisionner), ControllerPublishVolume (rendre le volume disponible pour un nœud donné), NodeStageVolume/NodePublishVolume (préparer puis monter le volume dans le namespace du conteneur — le « Mount/Unmount » des notes de cours), CreateSnapshot/DeleteSnapshot (capturer/supprimer un snapshot), ControllerExpandVolume/NodeExpandVolume (agrandir la capacité côté stockage, puis étendre le filesystem pour en profiter).",
     "CSIDriver — objet Kubernetes qui décrit les capacités et exigences d'un driver CSI donné, déployé par le fournisseur de stockage.",
     "Dans le spec d'un Pod, un volume `csi` référence : `driver` (le nom du CSI driver), `volumeAttributes` (attributs passés au driver), `fsType`, `readOnly`, et `nodePublishSecretRef` (secret pour l'authentification)."
   ],
@@ -914,7 +916,8 @@ window.CKA.formation = window.CKA.formation || [];
   "refs": [
     "https://kubernetes-csi.github.io/docs/",
     "https://kubernetes-csi.github.io/docs/deploying.html",
-    "https://kubernetes.io/docs/concepts/storage/volumes/"
+    "https://kubernetes.io/docs/concepts/storage/volumes/",
+    "https://raw.githubusercontent.com/container-storage-interface/spec/master/spec.md"
   ]
 }
   ];

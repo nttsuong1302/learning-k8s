@@ -1054,6 +1054,32 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-requests-limits",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Scheduler",
+  "title": "Requests & Limits : le vrai carburant du filtering (et pourquoi kubectl top ne suffit pas)",
+  "lead": "kubectl top donne une photo à l'instant T — inutilisable pour du capacity planning. Les requests/limits, elles, pilotent directement les décisions du scheduler et du kubelet.",
+  "body": [
+    "Pourquoi `kubectl top node`/`kubectl top pod` ne servent pas au capacity planning : c'est une vue temps réel (voir note « Metrics Server »), donc si des workloads s'éteignent/s'allument entre-temps, la vue devient obsolète — aucun historique, aucune tendance.",
+    "Requests et Limits, la définition officielle : « When you specify a resource request for containers in a Pod, the kube-scheduler uses this information to decide which node to place the Pod on. » Et : « When you specify a resource limit for a container, the kubelet enforces those limits so that the running container is not allowed to use more of that resource than the limit you set. The kubelet also reserves at least the request amount of that system resource specifically for that container to use. »"
+  ],
+  "points": [
+    "Unités CPU — en millicores (`500m` = 0,5 cœur) ou en cœurs entiers/décimaux (`0.5`, `1`, `1.5`) : les deux notations sont équivalentes et interchangeables.",
+    "Unités mémoire — une unité est OBLIGATOIRE : décimal (`E`, `P`, `T`, `G`, `M`, `k`) ou binaire (`Ei`, `Pi`, `Ti`, `Gi`, `Mi`, `Ki`) — `128Mi` ≠ `128M`.",
+    "Qui utilise quoi — le scheduler (étape Filter, voir note « Filtering en détail ») se base sur les REQUESTS pour décider si un Pod rentre sur un nœud (bin-packing) ; le kubelet, lui, applique les LIMITS pendant l'exécution.",
+    "Ce qui se passe en cas de dépassement — CPU : throttling (le noyau restreint l'accès au CPU, le conteneur continue de tourner, juste plus lentement). Mémoire : OOMKilled (le noyau peut tuer le conteneur — l'application peut dépasser temporairement sa limite mémoire, mais risque la terminaison si ça persiste). Retenir l'image : la limite CPU ralentit, la limite mémoire tue.",
+    "Zéro nœud avec assez de ressources → le Pod reste `Pending`, et `kubectl describe pod` affiche un event `FailedScheduling` expliquant la raison exacte (« Insufficient cpu », par exemple) — confirmé par la doc officielle de troubleshooting."
+  ],
+  "note": [
+    "Point de vigilance entendu en formation (retour d'expérience, pas une recommandation kubernetes.io) : sur des workloads très intensifs (IA/ML), poser des requests/limits très élevées peut rendre le recalcul de placement par le scheduler contre-productif — plus de temps passé à calculer qu'à effectivement placer les Pods. Dans un tout autre registre, la doc officielle documente bien un vrai levier de perf scheduler pour les GROS clusters (`percentageOfNodesToScore`, dans « Scheduler performance tuning ») — mais ce mécanisme répond à un problème de nombre de nœuds, pas spécifiquement au profil de ressources des Pods décrit en formation."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
+    "https://kubernetes.io/docs/tasks/debug/debug-application/debug-pods/",
+    "https://kubernetes.io/docs/concepts/scheduling-eviction/scheduler-perf-tuning/"
+  ]
+},
+{
   "id": "f-j1-filtering-volumes",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Scheduler",

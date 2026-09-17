@@ -918,7 +918,9 @@ window.CKA.formation = window.CKA.formation || [];
     "Opinion partagée par les deux formateurs (pas une recommandation kubernetes.io) : Kubernetes n'est pas la solution idéale pour héberger du stateful/stockage lourd — gérer des bascules d'état interne au cluster (bases de données internes, etc.) devient vite complexe. Conseil donné : « keep it simple ».",
     "Ce qu'il faut sauvegarder, sans débat — les certificats racine (CA) et leurs clés (sans eux, un incident oblige à réonboarder tout le cluster, bien plus long que de remettre des fichiers en place) ; les données etcd (snapshot officiel, voir doc kubeadm/etcd) ; les données des volumes de stockage, en particulier si le stockage est hébergé sur une baie externe/distribuée (il suffit alors de la remonter ailleurs pour récupérer la donnée).",
     "Pourquoi on NE sauvegarde PAS les manifestes applicatifs — dans l'écosystème décrit (GitOps ou charts Helm versionnés), les manifestes sont déjà persistés dans Git : « ils sont persistés quelque part », donc le risque de les perdre est faible.",
-    "Le vrai trou noir : les manifestes de Pods statiques — ils vivent sur les nœuds eux-mêmes (`/etc/kubernetes/manifests`, voir note kubeadm), PAS dans Git, et sont rarement sauvegardés. Pourquoi les static Pods existent : « Static Pods are started by the kubelet before the API server is available, which makes them suitable for bootstrapping control plane components. DaemonSets require a running control plane. » C'est exactement pour ça que kubeadm les utilise pour apiserver/etcd/scheduler/controller-manager (voir note « Control plane »)."
+    "Le vrai trou noir : les manifestes de Pods statiques — ils vivent sur les nœuds eux-mêmes (`/etc/kubernetes/manifests`, voir note kubeadm), PAS dans Git, et sont rarement sauvegardés. Pourquoi les static Pods existent : « Static Pods are started by the kubelet before the API server is available, which makes them suitable for bootstrapping control plane components. DaemonSets require a running control plane. » C'est exactement pour ça que kubeadm les utilise pour apiserver/etcd/scheduler/controller-manager (voir note « Control plane »).",
+    "Les vraies limites d'un static Pod, qui expliquent pourquoi c'est un cas niche — « The spec of a static Pod cannot refer to other API objects, such as ServiceAccount, ConfigMap, or Secret. » Donc pas de ConfigMap, pas de Secret, pas de ServiceAccount, pas de gestion via des Services/Ingress. Et surtout : « Static Pods are not managed by the control plane, so they cannot be rolled out, rolled back, or scaled using standard Kubernetes mechanisms » — le kubelet gère seul le cycle de vie, sans aucun des outils habituels de Kubernetes. Conclusion officielle : « If you are running clustered Kubernetes and are using static Pods to run a Pod on every node, you should probably be using a DaemonSet instead! »",
+    "Backup stateful vs stateless — pour du stateful, on sauvegarde les données (volumes). Pour du stateless, l'état ET la config sont déjà entièrement dans etcd (manifestes, Deployments, ReplicaSets, avec tout l'historique) : une fois etcd restauré sur un cluster, le scheduler reprend la main tout seul et replace les Pods/Deployments à leur place — pas besoin de backup séparé pour ça."
   ],
   "note": [
     "Anecdote de terrain (non officielle) sur un AUTRE usage de static Pod, plus rare : un Pod statique déployé sur tous les nœuds pour exposer une console web SSH de secours/debug — utile ponctuellement, remplacé depuis par une vraie stack d'observabilité (voir notes « Logs & observabilité »). Les cas d'usage réellement documentés par kubernetes.io restent centrés sur le bootstrap du control plane."
@@ -927,6 +929,50 @@ window.CKA.formation = window.CKA.formation || [];
     "https://kubernetes.io/docs/tasks/administer-cluster/configure-upgrade-etcd/",
     "https://kubernetes.io/docs/concepts/workloads/pods/static-pods/",
     "https://kubernetes.io/docs/tasks/configure-pod-container/static-pod/"
+  ]
+},
+{
+  "id": "f-j1-etcdctl-etcdutl",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Control plane & etcd",
+  "title": "etcdctl vs etcdutl : sauvegarder et restaurer etcd en pratique",
+  "lead": "Deux outils, deux rôles bien distincts — l'un parle à un etcd vivant sur le réseau, l'autre travaille hors-ligne sur un fichier.",
+  "body": [
+    "Précision par rapport à une inversion entendue en formation : c'est bien `etcdctl` qui prend le snapshot d'un cluster etcd EN VIE, via le réseau — `ETCDCTL_API=3 etcdctl --endpoints $ENDPOINT snapshot save snapshot.db`. C'est en revanche `etcdutl` (l'outil « offline ») qui inspecte et restaure un snapshot déjà sur disque : `etcdutl snapshot status snapshot.db -w table` (hash, révision, nombre de clés, taille) et `etcdutl snapshot restore snapshot.db --data-dir output-dir`."
+  ],
+  "points": [
+    "Pré-requis pour `etcdctl` (accès réseau à un etcd vivant) — le certificat de l'autorité racine générée par etcd, un certificat client (CRT) + sa clé signés par cette autorité, et l'endpoint à joindre (port client par défaut : `2379`).",
+    "`etcdctl endpoint status` — récupère l'état du cluster etcd cible, à faire avant de lancer un snapshot.",
+    "Snapshot planifié — rien n'empêche de brancher `etcdctl snapshot save` sur un CronJob pour sauvegarder régulièrement vers un stockage distant.",
+    "Restauration — `etcdutl snapshot restore` réinitialise dans un NOUVEAU répertoire de données (`--data-dir`) à partir du snapshot ; c'est ce nouveau répertoire qui sert ensuite à redémarrer un etcd fonctionnel, sans avoir besoin de reconstruire toute l'infra machine derrière."
+  ],
+  "note": [
+    "À relier à la note « Backup/restore du cluster » : une fois cet etcd restauré et redémarré, c'est le scheduler qui reprend la main et replace tous les objets stateless — c'est etcd qui fait tout le travail de mémoire, pas le processus de restauration en lui-même."
+  ],
+  "refs": [
+    "https://etcd.io/docs/v3.5/op-guide/recovery/"
+  ]
+},
+{
+  "id": "f-j1-velero",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Control plane & etcd",
+  "title": "Velero : backup, restore et migration de ressources Kubernetes",
+  "lead": "Contrairement à etcdctl/etcdutl (qui ne voient qu'etcd), Velero sauvegarde les objets K8s ET les volumes persistants — et sert aussi à migrer entre clusters.",
+  "body": [
+    "Ce que Velero sauvegarde : les objets Kubernetes (exportés vers du stockage objet cloud) et les volumes persistants (via des snapshots de l'API du fournisseur cloud). « You can back up or restore all objects in your cluster, or you can filter objects by type, namespace, and/or label. »"
+  ],
+  "points": [
+    "3 cas d'usage officiels — disaster recovery (restaurer un cluster après une panne), migration de cluster (déplacer des ressources d'un cluster à l'autre, avec remapping de namespace possible), et snapshot pré-opération : « Velero is ideal for the disaster recovery use case, as well as for snapshotting your application state, prior to performing system operations on your cluster, like upgrades. »",
+    "Architecture client-serveur — un serveur tourne dans (ou hors de) le cluster, piloté depuis un poste via une CLI. Chaque opération (backup à la demande, backup planifié, restore) est un objet Custom Resource (CRD) — encore un exemple du pattern Controller/CRD déjà vu.",
+    "Stockage supporté — nativement le stockage objet cloud (S3 et compatibles, Azure Blob, Google Cloud Storage…) et les snapshots natifs des fournisseurs (EBS, Managed Disks…). En local/test, Velero se branche sur MinIO comme stockage S3-compatible auto-hébergé.",
+    "Backup planifié et filtré — syntaxe proche de Kubernetes (sélecteurs par labels), planification au format cron classique, possibilité d'inclure/exclure des namespaces et de filtrer les ressources cluster-scoped à embarquer ou non dans un backup."
+  ],
+  "note": [
+    "Velero et etcdctl/etcdutl ne sont pas concurrents mais complémentaires : etcd(ctl/utl) restaure l'état ET la configuration du cluster lui-même (voir note dédiée), Velero se concentre sur les ressources + les données des volumes — et sert en plus d'outil de migration entre clusters, un usage qu'etcd seul ne couvre pas."
+  ],
+  "refs": [
+    "https://velero.io/docs/main/how-velero-works/"
   ]
 },
 {

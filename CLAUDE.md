@@ -86,7 +86,8 @@ citée pour le facteur « Logs »), **grafana.com** (doc officielle de Grafana L
 / **github.com/elastic** (doc officielle de l'Elastic Stack — Filebeat, Elasticsearch, ECK),
 **github.com/kubernetes-sigs/metrics-server** (doc officielle du projet Metrics Server), **prometheus.io**
 (doc officielle de Prometheus, projet CNCF graduated), **prometheus-operator.dev** (doc officielle du
-Prometheus Operator).
+Prometheus Operator), **velero.io** (doc officielle de Velero, outil de backup/restore/migration
+Kubernetes).
 Les mêmes principes de fidélité
 s'appliquent : ne rien inventer, chaque fiche porte ses `refs` vers la doc officielle du projet
 concerné.

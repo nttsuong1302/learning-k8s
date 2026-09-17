@@ -1080,6 +1080,52 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-qos-classes",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Scheduler",
+  "title": "QoS classes : Guaranteed, Burstable, BestEffort",
+  "lead": "Le « burst » entre ta request et ta limite n'est pas juste une image — c'est littéralement la classe de qualité de service Burstable de Kubernetes.",
+  "body": [
+    "3 classes, entièrement dérivées de tes requests/limites (rien à déclarer explicitement) :",
+    "Guaranteed — « every Container in the Pod must have a memory limit and memory request, both greater than zero » ET « the memory limit must equal the memory request », même chose pour le CPU. La classe la plus protégée : « guaranteed not to be killed until they exceed their limits or there are no lower-priority Pods that can be preempted »."
+  ],
+  "points": [
+    "Burstable — le Pod ne remplit pas les critères Guaranteed, mais au moins un conteneur a une request OU une limite de CPU/mémoire déclarée. C'est LA zone de « burst » : le Pod démarre garanti au niveau de sa request, et peut grimper jusqu'à sa limite si des ressources sont disponibles. Évincé seulement après TOUS les Pods BestEffort.",
+    "BestEffort — aucun conteneur du Pod n'a de request NI de limite CPU/mémoire déclarée. Utilise ce qui reste des autres classes. « The kubelet prefers to evict these Pods first when node resources are scarce » — les premiers sacrifiés en cas de pénurie.",
+    "Bien dimensionner, ce n'est PAS minimiser — sous-provisionner (requests trop basses) expose à l'éviction/OOMKill/throttling ; sur-provisionner gaspille de la capacité (moins de Pods par nœud, plus de nœuds que nécessaire, donc plus cher). L'objectif : une request/limite en adéquation avec l'usage réel du workload.",
+    "Bénéfices d'un bon dimensionnement (retour de formation, cohérent avec les classes QoS officielles) — meilleure utilisation des nœuds, comportement d'éviction prévisible (on sait qui saute en premier grâce à la QoS), scheduling plus efficace, densité de cluster optimale."
+  ],
+  "note": [
+    "Outils pour objectiver le dimensionnement, cités en formation : `kubectl top pod` (instantané), la stack Prometheus/Grafana (comparer usage réel vs déclaré dans le temps — voir notes dédiées), les jauges d'usage des cloud providers, et le VPA en mode recommandation (voir note « VPA en pratique »)."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/concepts/workloads/pods/pod-qos/"
+  ]
+},
+{
+  "id": "f-j1-vpa-practice",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Scheduler",
+  "title": "VPA en pratique : update modes, resourcePolicy et Goldilocks",
+  "lead": "Le VPA ne décide jamais tout seul de grandir à l'infini — c'est toi qui poses les bornes. Et il ne répare rien, il ajuste juste les requests/limites.",
+  "body": [
+    "Le VPA « frees users from the necessity of setting up-to-date resource requests for the containers in their pods » en les ajustant automatiquement selon l'usage réel observé — mais toujours DANS des bornes que tu définis toi-même, jamais de façon totalement autonome."
+  ],
+  "points": [
+    "4 update modes officiels — `Off` (« the recommender still sets the recommended resources in the VerticalPodAutoscaler object » sans jamais les appliquer — c'est le mode « recommandation seule » utilisé par Goldilocks), `Initial` (assigne les ressources uniquement à la création du Pod, jamais après), `Recreate` (ajuste aussi en cours de vie, en supprimant/recréant le Pod), `Auto` (déprécié, se comporte comme Recreate).",
+    "resourcePolicy / containerPolicies — `minAllowed`/`maxAllowed` (bornes basse/haute que le VPA ne dépassera jamais pour un conteneur donné — ex. jamais sous 100 millicores, jamais au-dessus de 2 vCPU), `controlledResources` (CPU et/ou mémoire, les deux par défaut), `controlledValues` : `RequestsOnly` (seule la request bouge) ou `RequestsAndLimits` (les deux bougent ensemble, proportionnellement).",
+    "Goldilocks — « a utility that can help you identify a starting point for resource requests and limits », qui « uses the kubernetes vertical-pod-autoscaler in recommendation mode » : il génère un VPA par workload dans un namespace, interroge ses recommandations, et les affiche dans un dashboard — sans jamais rien appliquer lui-même."
+  ],
+  "note": [
+    "Ce que le VPA ne fait PAS (retour de formation, à valider au cas par cas) : ce n'est pas un outil de self-healing — il ne « répare » rien tout seul. Il peut réagir après coup à un OOMKill en augmentant requests/limites au redémarrage suivant pour limiter la récidive, mais il ne détecte pas une fuite mémoire progressive comme un problème à corriger — il ne fait qu'ajuster des chiffres de resources, jamais le comportement de l'application elle-même."
+  ],
+  "refs": [
+    "https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/README.md",
+    "https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/docs/api.md",
+    "https://goldilocks.docs.fairwinds.com/"
+  ]
+},
+{
   "id": "f-j1-filtering-volumes",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Scheduler",

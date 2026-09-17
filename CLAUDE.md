@@ -88,7 +88,9 @@ citée pour le facteur « Logs »), **grafana.com** (doc officielle de Grafana L
 (doc officielle de Prometheus, projet CNCF graduated), **prometheus-operator.dev** (doc officielle du
 Prometheus Operator), **velero.io** (doc officielle de Velero, outil de backup/restore/migration
 Kubernetes), **www.cncf.io/projects** (pages officielles de statut de maturité CNCF par projet),
-**clomonitor.io** (doc officielle de l'outil de notation de la santé des projets CNCF).
+**clomonitor.io** (doc officielle de l'outil de notation de la santé des projets CNCF),
+**github.com/kubernetes/autoscaler** (dépôt officiel du Vertical/Horizontal Pod Autoscaler),
+**goldilocks.docs.fairwinds.com** (doc officielle de Goldilocks).
 Les mêmes principes de fidélité
 s'appliquent : ne rien inventer, chaque fiche porte ses `refs` vers la doc officielle du projet
 concerné.

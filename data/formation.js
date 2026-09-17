@@ -864,6 +864,30 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-pvc-storageclass",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Storage",
+  "title": "PersistentVolumeClaim : « similaire à un Pod »",
+  "lead": "PVC consomme du stockage comme un Pod consomme du CPU/mémoire — et StorageClass, c'est le catalogue que l'administrateur expose pour ça.",
+  "body": [
+    "L'analogie officielle : « A PersistentVolumeClaim (PVC) is a request for storage by a user. It is similar to a Pod. Pods consume node resources and PVCs consume PV resources. Pods can request specific levels of resources (CPU and Memory). Claims can request specific size and access modes (e.g., they can be mounted ReadWriteOnce, ReadOnlyMany, ReadWriteMany, or ReadWriteOncePod). »"
+  ],
+  "points": [
+    "PersistentVolume (PV) — « a piece of storage in the cluster that has been provisioned by an administrator or dynamically provisioned using Storage Classes. It is a resource in the cluster just like a node is a cluster resource. » Son cycle de vie est indépendant de tout Pod qui l'utilise.",
+    "PersistentVolumeClaim (PVC) — la demande faite par l'utilisateur, comme un Pod demande du CPU/mémoire, un PVC demande une taille et un access mode.",
+    "StorageClass — « provides a way for administrators to describe the classes of storage they offer. Different classes might map to quality-of-service levels, or to backup policies, or to arbitrary policies determined by the cluster administrators. » Kubernetes lui-même n'a pas d'avis sur ce que représentent ces classes — la doc compare ça aux « profiles » d'autres systèmes de stockage.",
+    "Champs clés d'une StorageClass — `provisioner` (quel plugin/CSI driver provisionne les PV, voir note « CSI »), `parameters` (config spécifique au provisioner), `reclaimPolicy` (Delete ou Retain après usage), `allowVolumeExpansion`, `volumeBindingMode` (quand le binding/provisioning se déclenche), `allowedTopologies`.",
+    "Le nom d'une StorageClass compte — c'est ce que l'utilisateur indique dans son PVC (`storageClassName`) pour demander cette classe précise."
+  ],
+  "note": [
+    "À relier à la note « CSI : définition & CSI driver » : le `provisioner` d'une StorageClass, c'est justement le CSI driver qui va créer le PV réel derrière la demande du PVC."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/concepts/storage/persistent-volumes/",
+    "https://kubernetes.io/docs/concepts/storage/storage-classes/"
+  ]
+},
+{
   "id": "f-j1-csi",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Storage",

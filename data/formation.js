@@ -1006,6 +1006,29 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-garbage-collection",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Control plane & etcd",
+  "title": "Garbage collection : kubelet GC vs TTL Controller — deux mécanismes distincts",
+  "lead": "Nettoyer des images/conteneurs morts sur un nœud n'a rien à voir avec nettoyer un Job terminé dans etcd — deux composants différents, deux échelles différentes.",
+  "body": [
+    "Précision par rapport à une formulation entendue en formation (les deux étaient présentés comme UN seul « garbage collector » à deux niveaux) : ce sont en réalité deux mécanismes bien distincts, portés par deux composants différents.",
+    "1. Garbage collection du kubelet, au niveau du NŒUD — « The kubelet performs garbage collection on unused images every five minutes and on unused containers every minute. » Configurable via `HighThresholdPercent`/`LowThresholdPercent` (seuils d'usage disque qui déclenchent/arrêtent le nettoyage)."
+  ],
+  "points": [
+    "2. TTL-after-finished Controller, au niveau du CLUSTER — « only supported for Jobs » (pas pour tout objet Kubernetes). Le champ `.spec.ttlSecondsAfterFinished` d'un Job démarre un minuteur dès que le Job passe `Complete` ou `Failed` ; une fois expiré, le Job (et ses Pods) devient éligible à une suppression en cascade, effacé d'etcd.",
+    "Qui fait quoi — le kubelet gère la GC d'images/conteneurs SUR CHAQUE nœud (fichiers locaux) ; le TTL Controller, lui, tourne dans le kube-controller-manager (control plane), pas sur les nœuds — il agit directement sur les objets API (donc sur etcd), pas sur le disque local.",
+    "Éviction et grace period (déjà vue dans la note « QoS classes ») — une fois un Pod marqué pour suppression (éviction ou TTL expiré), il reste visible un court instant avant sa suppression effective, le temps que le `terminationGracePeriodSeconds` s'écoule (0s en cas de seuil d'éviction « hard »)."
+  ],
+  "note": [
+    "À retenir : « garbage collection » dans Kubernetes n'est pas UN mécanisme, mais un terme générique qui recouvre plusieurs nettoyages indépendants selon la ressource concernée (images/conteneurs via le kubelet, Jobs terminés via le TTL Controller, objets orphelins via les references de propriété/ownerReferences — non détaillé ici)."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/concepts/architecture/garbage-collection/",
+    "https://kubernetes.io/docs/concepts/workloads/controllers/ttlafterfinished/"
+  ]
+},
+{
   "id": "f-j1-scheduler-filter-score",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Scheduler",

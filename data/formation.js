@@ -454,6 +454,31 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-controllers-crd-operator",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "Controllers, CRD et Operator",
+  "lead": "Le patron de base de tout Kubernetes (Controller), comment on ajoute de nouveaux types d'objets (CRD), et comment on combine les deux pour automatiser une appli entière (Operator).",
+  "body": [
+    "Controller — « controllers are control loops that watch the state of your cluster, then make or request changes where needed. Each controller tries to move the current cluster state closer to the desired state. » Chaque controller suit au moins un type de ressource, qui porte un champ `spec` représentant l'état désiré.",
+    "Point clé : les controllers ne se parlent JAMAIS directement entre eux — ils passent tous par l'API server. Exemple du Job controller : « The Job controller does not run any Pods or containers itself. Instead, the Job controller tells the API server to create or remove Pods. » D'autres composants (scheduler, kubelet) observent ensuite ces changements et exécutent le travail — un système découplé et résilient."
+  ],
+  "points": [
+    "CRD (CustomResourceDefinition) — le mécanisme pour ajouter de nouveaux types d'objets à l'API Kubernetes. Une « custom resource » est « an extension of the Kubernetes API that is not necessarily available in a default Kubernetes installation ». Une fois la CRD installée, tu la manipules avec `kubectl` exactement comme un objet natif (mêmes conventions `.spec`/`.status`/`.metadata`).",
+    "Deux façons d'étendre l'API — CRD (plus simple, la voie la plus courante) ou API aggregation (plus flexible, plus complexe, plus de contrôle sur les chemins REST).",
+    "Operator — « the operator pattern aims to capture the key aim of a human operator who is managing a service or set of services. » Techniquement : « Operators are clients of the Kubernetes API that act as controllers for a Custom Resource » — donc Operator = CRD (l'objet que tu déclares) + un controller qui applique la boucle de contrôle dessus.",
+    "Ce qu'un Operator peut automatiser (exemples officiels) — déployer une appli à la demande, prendre/restaurer des backups, gérer les upgrades (code + schéma/config ensemble), publier des Services pour des applis qui ne connaissent pas l'API Kubernetes, simuler des pannes pour tester la résilience, élire un leader pour une appli distribuée sans mécanisme d'élection interne."
+  ],
+  "note": [
+    "CloudNativePG (le sujet complémentaire « hors CKA » de ce trainer) EST justement un Operator PostgreSQL : une CRD `Cluster` (entre autres) + un controller qui gère tout le cycle de vie (HA, backups, upgrades…) — l'exemple concret de tout ce que cette fiche décrit."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/concepts/architecture/controller/",
+    "https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/",
+    "https://kubernetes.io/docs/concepts/extend-kubernetes/operator/"
+  ]
+},
+{
   "id": "f-j1-schema-infra",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Control plane & etcd",

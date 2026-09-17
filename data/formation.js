@@ -635,6 +635,51 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-prometheus-data-model",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "Prometheus : data model, types de métriques et exporters",
+  "lead": "Un nom de métrique + des labels = un time series unique. 4 types de métriques. Et une métrique n'a pas besoin de venir de ton code — les exporters existent pour ça.",
+  "body": [
+    "Le data model, précisément — « Prometheus fundamentally stores all data as time series: streams of timestamped values belonging to the same metric and the same set of labeled dimensions. » Chaque time series est identifié de façon unique par un nom de métrique + des labels, ex. `api_http_requests_total{method=\"POST\", handler=\"/messages\"}`. Chaque échantillon porte une valeur + un timestamp précis à la milliseconde."
+  ],
+  "points": [
+    "Counter — « a cumulative metric that represents a single monotonically increasing counter whose value can only increase or be reset to zero on restart. » Ne peut que monter (ou repartir à zéro au redémarrage) : nombre de requêtes servies, de tâches terminées, d'erreurs.",
+    "Gauge — « a metric that represents a single numerical value that can arbitrarily go up and down. » Typiquement des ressources : CPU, RAM, espace disque, nombre de requêtes concurrentes.",
+    "Histogram — « records observations […] by counting them in configurable buckets. It also provides a sum of all observed values. » Pense durées de requêtes ou tailles de réponses réparties par tranches (buckets configurables), avec la somme de toutes les observations.",
+    "Summary — « samples observations […] it calculates configurable quantiles over a sliding time window. » Proche de l'histogram, mais calcule des quantiles configurables sur une fenêtre de temps glissante plutôt que des buckets fixes.",
+    "Exporters — deux grandes familles pour récupérer une métrique SANS instrumenter le code toi-même : hardware/host (node exporter pour le matériel générique, mais aussi des exporters spécialisés type NVIDIA pour du GPU, ou des exporters constructeur) et software (les binaires connus — serveurs web, messaging, bases de données, stockage — et les composants Kubernetes eux-mêmes, comme etcd, qui exposent tous un endpoint métriques nativement).",
+    "Métriques custom — rien n'empêche de créer ses propres time series pour du métier (nombre de commandes passées, taux d'échec d'un pipeline de commandes…), via les mêmes bibliothèques clientes Prometheus utilisées pour les métriques techniques."
+  ],
+  "note": [
+    "Confirmé en formation, cohérent avec la note « Metrics Server & le Resource Metrics Pipeline » : Metrics Server ne stocke RIEN, ni dans etcd ni en local — à chaque redémarrage, ses gauges repartent de zéro. C'est purement du temps réel, comme un `htop` du cluster."
+  ],
+  "refs": [
+    "https://prometheus.io/docs/concepts/metric_types/",
+    "https://prometheus.io/docs/concepts/data_model/"
+  ]
+},
+{
+  "id": "f-j1-prometheus-operator",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "Prometheus Operator : 4 CRD, et l'auto-discovery par label",
+  "lead": "Encore un Operator (voir note dédiée) : 4 CRD à poser, et Prometheus se reconfigure tout seul dès qu'une appli avec le bon label apparaît.",
+  "body": [
+    "Le Prometheus Operator gère 4 Custom Resources : `Prometheus` (« sets up a Prometheus instance in a Kubernetes cluster » — version, stockage…), `ServiceMonitor` (« defines how a dynamic set of services should be monitored »), `Alertmanager` (« sets up an Alertmanager instance »), et `PrometheusRule` (« allows the definition of alerting and recording rules to be consumed by Prometheus or Thanos Ruler instances » — encore un pont avec Thanos)."
+  ],
+  "points": [
+    "ServiceMonitor, la vraie magie — « It identifies services through their labels and automatically discovers the corresponding pods […] Prometheus automatically adjusts its targets accordingly » dès qu'un Pod matchant le label apparaît ou disparaît. Concrètement, un `ServiceMonitor` porte un sélecteur de labels (ex. `team: frontend`) + le nom du port qui expose les métriques (le port peut être un entier ou un alias comme `web`) — plus besoin d'ajouter une target à la main à chaque nouvelle appli.",
+    "Astuce de terrain (retour d'expérience formateur, pas une doc officielle) — poser systématiquement un label `monitor: true` sur les workloads, ajouté automatiquement via un mutating admission webhook (voir note « Admission webhooks ») à tout ce qui transite par l'API server. Résultat : toute nouvelle appli est monitorée sans action de l'équipe applicative."
+  ],
+  "note": [
+    "À relier à « Admission webhooks : mutating vs validating » : cet exemple de label auto-injecté est un cas concret de plus, dans la même veine que l'injection de sidecar Istio ou de secrets Vault déjà vues."
+  ],
+  "refs": [
+    "https://prometheus-operator.dev/docs/getting-started/design/"
+  ]
+},
+{
   "id": "f-j1-schema-infra",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Control plane & etcd",

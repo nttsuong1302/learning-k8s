@@ -85,7 +85,8 @@ et **openpolicyagent.org** (doc officielle d'OPA Gatekeeper et du langage Rego, 
 citée pour le facteur « Logs »), **grafana.com** (doc officielle de Grafana Loki), **elastic.co**
 / **github.com/elastic** (doc officielle de l'Elastic Stack — Filebeat, Elasticsearch, ECK),
 **github.com/kubernetes-sigs/metrics-server** (doc officielle du projet Metrics Server), **prometheus.io**
-(doc officielle de Prometheus, projet CNCF graduated).
+(doc officielle de Prometheus, projet CNCF graduated), **prometheus-operator.dev** (doc officielle du
+Prometheus Operator).
 Les mêmes principes de fidélité
 s'appliquent : ne rien inventer, chaque fiche porte ses `refs` vers la doc officielle du projet
 concerné.

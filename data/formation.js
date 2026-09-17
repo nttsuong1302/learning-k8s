@@ -586,6 +586,55 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-metrics-server",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "Metrics Server & le Resource Metrics Pipeline",
+  "lead": "Kubernetes expose lui-même un minimum de métriques via l'API — pas besoin d'outil tiers pour ça, mais ça reste volontairement très limité.",
+  "body": [
+    "Deux pipelines de métriques bien distincts, officiellement nommés — « The Metrics API, and the metrics pipeline that it enables, only offers the minimum CPU and memory metrics to enable automatic scaling using HPA and/or VPA. » C'est le Resource Metrics Pipeline (minimal, natif). Pour aller plus loin, « you can complement the simpler Metrics API by deploying a second metrics pipeline that uses the Custom Metrics API » — le Full Metrics Pipeline, qui lui nécessite un outil tiers (Prometheus, Datadog…).",
+    "Metrics Server, le composant qui alimente le Resource Metrics Pipeline — « the metrics-server fetches resource metrics from the kubelets and exposes them in the Kubernetes API server through the Metrics API for use by the HPA and VPA. » Concrètement, il interroge l'endpoint `/metrics/resource` de chaque kubelet."
+  ],
+  "points": [
+    "Pas de stockage long terme — Metrics Server garde tout en cache mémoire (pas dans etcd, pas persisté), justement pour ne pas surcharger etcd. Aucun historique : à peine collectée, une métrique remplace la précédente.",
+    "Une seule instance par cluster, par défaut — le mode HA (plusieurs replicas) existe mais reste une configuration spécifique nécessitant au moins 2 nœuds, pas le mode standard.",
+    "Utilisé par `kubectl top node` / `kubectl top pod` (avec `-A` pour tous les namespaces), et par le HorizontalPodAutoscaler / VerticalPodAutoscaler.",
+    "Métriques « core » uniquement — CPU et mémoire, rien d'autre (pas de disque, pas de réseau, pas de consommation applicative interne). Tout le reste (I/O disque/réseau, consommation de process, filesystem…) relève du Full Metrics Pipeline, pas de Metrics Server.",
+    "Limite importante — Metrics Server ne voit que le conteneur de l'extérieur (via kubelet/cgroups), jamais l'intérieur de l'appli. Pour des métriques applicatives (ex. JVM), il faut que l'appli expose elle-même un endpoint dédié — beaucoup de frameworks en fournissent un nativement, scrappable ensuite par Prometheus (voir note dédiée)."
+  ],
+  "note": [
+    "Précision par rapport à une affirmation entendue en formation : sans Metrics Server, le scheduler continue de fonctionner normalement (il se base sur les requests/limits déclarés et la capacité des Node, pas sur Metrics Server) — seuls le HPA/VPA et `kubectl top` sont réellement bloqués sans lui. Déjà vu dans la note « API Aggregation Layer » : c'est via `metrics.k8s.io` (APIService) que tout ça est exposé."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/tasks/debug/debug-cluster/resource-metrics-pipeline/",
+    "https://github.com/kubernetes-sigs/metrics-server"
+  ]
+},
+{
+  "id": "f-j1-prometheus-architecture",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "Prometheus : architecture (scraping, Pushgateway, Alertmanager)",
+  "lead": "Le Full Metrics Pipeline en pratique — comment Prometheus va chercher la donnée, la stocke, et la transforme en alertes.",
+  "body": [
+    "« Prometheus scrapes metrics from instrumented jobs, either directly or via an intermediary push gateway for short-lived jobs. It stores all scraped samples locally and runs rules over this data to either aggregate and record new time series from existing data or generate alerts. » Le mode par défaut est le PULL (le serveur Prometheus va chercher la donnée en HTTP sur des cibles) — la Pushgateway est l'exception, réservée aux jobs trop courts pour être scrapés à temps."
+  ],
+  "points": [
+    "Service discovery — Prometheus peut découvrir automatiquement ses cibles de scraping (ex. les Services d'un cluster Kubernetes) plutôt que de tout lister statiquement.",
+    "Format d'exposition — les métriques Prometheus suivent un format standard, celui sur lequel s'appuie OpenMetrics ; énormément de bibliothèques clientes existent pour l'exposer depuis quasi n'importe quel langage/framework.",
+    "PromQL — le langage de requête, indispensable pour extraire une donnée pertinente du time series stocké.",
+    "Alertmanager — un second projet open source, séparé de Prometheus, qui route les notifications. Une alerte = une requête PromQL + un seuil + une destination de notification (email, Slack, PagerDuty, etc.).",
+    "Vue d'ensemble — Prometheus server (retrieval + stockage local + serveur HTTP) → interrogé via PromQL par Grafana ou tout autre client API. « Each Prometheus server operat[es] autonomously without requiring distributed storage or remote dependencies » — d'où le besoin d'un Thanos (voir note dédiée) si on veut de la rétention longue durée ou une vue multi-Prometheus."
+  ],
+  "note": [
+    "À relier à « Metrics Server & le Resource Metrics Pipeline » : c'est justement Prometheus (+ un adaptateur de métriques custom) qui alimente la Custom Metrics API évoquée dans la note « API Aggregation Layer », pour permettre au HPA de scaler sur des métriques métier plutôt que juste CPU/mémoire."
+  ],
+  "refs": [
+    "https://prometheus.io/docs/introduction/overview/",
+    "https://prometheus.io/docs/concepts/data_model/"
+  ]
+},
+{
   "id": "f-j1-schema-infra",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Control plane & etcd",

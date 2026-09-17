@@ -83,7 +83,9 @@ et **docs.portworx.com** (doc officielle de deux provisioners CSI tiers cités e
 et **openpolicyagent.org** (doc officielle d'OPA Gatekeeper et du langage Rego, projet CNCF graduated),
 **12factor.net** (le manifeste The Twelve-Factor App, référence historique des pratiques cloud-native
 citée pour le facteur « Logs »), **grafana.com** (doc officielle de Grafana Loki), **elastic.co**
-/ **github.com/elastic** (doc officielle de l'Elastic Stack — Filebeat, Elasticsearch, ECK).
+/ **github.com/elastic** (doc officielle de l'Elastic Stack — Filebeat, Elasticsearch, ECK),
+**github.com/kubernetes-sigs/metrics-server** (doc officielle du projet Metrics Server), **prometheus.io**
+(doc officielle de Prometheus, projet CNCF graduated).
 Les mêmes principes de fidélité
 s'appliquent : ne rien inventer, chaque fiche porte ses `refs` vers la doc officielle du projet
 concerné.

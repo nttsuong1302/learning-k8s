@@ -905,6 +905,31 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-backup-restore-static-pods",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Control plane & etcd",
+  "title": "Backup/restore du cluster : ce qu'on sauvegarde vraiment (et le cas des static Pods)",
+  "lead": "Le vrai usage d'un restore etcd selon un débat de formateurs, ce qui doit vraiment être sauvegardé, et pourquoi les manifestes de Pods statiques sont le trou noir des sauvegardes.",
+  "body": [
+    "Ce que dit la doc officielle, sans ambiguïté : « If your Kubernetes cluster uses etcd as its backing store, make sure you have a back up plan for the data. » etcd étant la source de vérité du cluster (voir note « Control plane »), sa stabilité est jugée critique : « Keeping etcd clusters stable is critical to the stability of Kubernetes clusters. »",
+    "Débat entre formateurs (retour d'expérience, à prendre comme un avis de terrain, pas une prescription officielle) : trois usages étaient évoqués pour restaurer un backup etcd — disaster recovery, créer un environnement ISO pour tester des upgrades, et répliquer un environnement ailleurs. Consensus des deux formateurs : seul le disaster recovery est un « vrai » cas d'usage clair. Pour tester des upgrades ou répliquer, restaurer etcd pose problème concret — noms de nœuds différents, logs/états non pertinents qui polluent — et il est jugé préférable de RECONSTRUIRE un cluster iso via de l'Infrastructure as Code (Terraform/Ansible, cité comme la méthode de provisioning d'« environ 95 % » des clusters rencontrés par l'un des formateurs) plutôt que de restaurer un snapshot."
+  ],
+  "points": [
+    "Opinion partagée par les deux formateurs (pas une recommandation kubernetes.io) : Kubernetes n'est pas la solution idéale pour héberger du stateful/stockage lourd — gérer des bascules d'état interne au cluster (bases de données internes, etc.) devient vite complexe. Conseil donné : « keep it simple ».",
+    "Ce qu'il faut sauvegarder, sans débat — les certificats racine (CA) et leurs clés (sans eux, un incident oblige à réonboarder tout le cluster, bien plus long que de remettre des fichiers en place) ; les données etcd (snapshot officiel, voir doc kubeadm/etcd) ; les données des volumes de stockage, en particulier si le stockage est hébergé sur une baie externe/distribuée (il suffit alors de la remonter ailleurs pour récupérer la donnée).",
+    "Pourquoi on NE sauvegarde PAS les manifestes applicatifs — dans l'écosystème décrit (GitOps ou charts Helm versionnés), les manifestes sont déjà persistés dans Git : « ils sont persistés quelque part », donc le risque de les perdre est faible.",
+    "Le vrai trou noir : les manifestes de Pods statiques — ils vivent sur les nœuds eux-mêmes (`/etc/kubernetes/manifests`, voir note kubeadm), PAS dans Git, et sont rarement sauvegardés. Pourquoi les static Pods existent : « Static Pods are started by the kubelet before the API server is available, which makes them suitable for bootstrapping control plane components. DaemonSets require a running control plane. » C'est exactement pour ça que kubeadm les utilise pour apiserver/etcd/scheduler/controller-manager (voir note « Control plane »)."
+  ],
+  "note": [
+    "Anecdote de terrain (non officielle) sur un AUTRE usage de static Pod, plus rare : un Pod statique déployé sur tous les nœuds pour exposer une console web SSH de secours/debug — utile ponctuellement, remplacé depuis par une vraie stack d'observabilité (voir notes « Logs & observabilité »). Les cas d'usage réellement documentés par kubernetes.io restent centrés sur le bootstrap du control plane."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/tasks/administer-cluster/configure-upgrade-etcd/",
+    "https://kubernetes.io/docs/concepts/workloads/pods/static-pods/",
+    "https://kubernetes.io/docs/tasks/configure-pod-container/static-pod/"
+  ]
+},
+{
   "id": "f-j1-scheduler-filter-score",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Scheduler",

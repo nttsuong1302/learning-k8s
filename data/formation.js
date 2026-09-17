@@ -558,6 +558,34 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-eck-practice",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "ECK en pratique : 3 CRD pour toute la stack, et l'alternative Loki/Grafana",
+  "lead": "Ce qu'il reste à faire une fois la stack déployée, comment ECK automatise tout ça avec 3 CRD, et le prix à payer si un composant part en vrille.",
+  "body": [
+    "Suite de « Déployer une stack de logs » : une fois Filebeat/Elasticsearch/Kibana en place, il reste du travail manuel — configurer Kibana (bons datasets, bonnes vues, bons dashboards), et gérer des users dans chaque composant, faute d'IAM unifié entre eux nativement. C'est exactement ce que l'opérateur ECK automatise.",
+    "ECK (Elastic Cloud on Kubernetes) — le code est ouvert (« The ECK code is open »), déployé comme un Operator (voir note « Controllers, CRD et Operator ») qui installe et gère la stack Elastic complète, avec autoscaling et autoconfiguration selon les patterns définis."
+  ],
+  "points": [
+    "3 CRD, dans l'ordre — un objet `Elasticsearch` (version, config, nombre de nœuds) fait créer par l'opérateur les StatefulSets associés, le stockage (PV/PVC — la doc dédie une section « Volume claim templates » à ce sujet), les certificats TLS (section « TLS/SSL Certificates » dédiée dans la doc) et les comptes de service ; un objet `Kibana` (version, nombre de replicas) s'enregistre automatiquement auprès de l'Elasticsearch créé juste avant ; un objet `Beats` (type `filebeat`, service Elasticsearch cible, version, config) fait créer le DaemonSet Filebeat qui lui est associé.",
+    "Une fois les 3 CRD posées, l'opérateur fait le reste — StatefulSets, DaemonSets, PV/PVC, certificats, comptes de service, Kibana fonctionnel branché sur l'Elasticsearch créé.",
+    "Le prix à payer — comme tout Operator, ECK applique la boucle de contrôle en continu (voir note « Controllers, CRD et Operator ») : si un des 3 composants part en erreur, éditer les objets à la main pour « bricoler » une solution devient vite compliqué, car l'opérateur réconcilie sans arrêt vers l'état désiré et annule ce genre de correctifs manuels.",
+    "Alternative : Loki + Grafana (déjà vue) — Loki joue le rôle de stockage des logs, Grafana celui de visualisation. Côté collecte, deux outils actuels : Filebeat, ou Grafana Alloy — le nouveau collecteur unifié de Grafana Labs. Les anciens outils (Grafana Agent, Promtail) sont en fin de vie : Promtail est explicitement noté « end of life (EOL) as of March 2, 2026 » par la doc officielle, tout le développement futur se fait désormais dans Alloy.",
+    "Peu importe la stack choisie (Elastic ou Loki) — il faut de toute façon prévoir la gestion de la RÉTENTION (agréger différents pots de données selon des rétentions différentes), et pour les métriques (Prometheus), un backend de type Thanos (déjà vu) pour ne pas se retrouver à court d'espace/d'historique rapidement."
+  ],
+  "note": [
+    "Repère de terrain cité en formation, à prendre comme telle (pas une donnée officiellement chiffrée) : avant l'existence d'ECK, ce genre d'orchestration (rolling updates de la stack Elastic compris) se faisait à la main — un gain opérationnel important pour qui l'a connu."
+  ],
+  "refs": [
+    "https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-overview.html",
+    "https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-elasticsearch-specification.html",
+    "https://www.elastic.co/elastic-cloud-kubernetes",
+    "https://grafana.com/docs/alloy/latest/",
+    "https://grafana.com/docs/loki/latest/send-data/promtail/"
+  ]
+},
+{
   "id": "f-j1-schema-infra",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Control plane & etcd",

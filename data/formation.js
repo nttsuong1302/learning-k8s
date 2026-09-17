@@ -1018,10 +1018,12 @@ window.CKA.formation = window.CKA.formation || [];
   "points": [
     "2. TTL-after-finished Controller, au niveau du CLUSTER — « only supported for Jobs » (pas pour tout objet Kubernetes). Le champ `.spec.ttlSecondsAfterFinished` d'un Job démarre un minuteur dès que le Job passe `Complete` ou `Failed` ; une fois expiré, le Job (et ses Pods) devient éligible à une suppression en cascade, effacé d'etcd.",
     "Qui fait quoi — le kubelet gère la GC d'images/conteneurs SUR CHAQUE nœud (fichiers locaux) ; le TTL Controller, lui, tourne dans le kube-controller-manager (control plane), pas sur les nœuds — il agit directement sur les objets API (donc sur etcd), pas sur le disque local.",
-    "Éviction et grace period (déjà vue dans la note « QoS classes ») — une fois un Pod marqué pour suppression (éviction ou TTL expiré), il reste visible un court instant avant sa suppression effective, le temps que le `terminationGracePeriodSeconds` s'écoule (0s en cas de seuil d'éviction « hard »)."
+    "Éviction et grace period (déjà vue dans la note « QoS classes ») — une fois un Pod marqué pour suppression (éviction ou TTL expiré), il reste visible un court instant avant sa suppression effective, le temps que le `terminationGracePeriodSeconds` s'écoule (0s en cas de seuil d'éviction « hard »).",
+    "3. Garbage collection par ownerReferences, au niveau du CLUSTER aussi — « Owner references tell the control plane which objects are dependent on others. Kubernetes uses owner references to give the control plane […] the opportunity to clean up related resources before deleting an object. » Exemple classique : un Pod référence son ReplicaSet, qui référence son Deployment. Les owner references sont gérées automatiquement par Kubernetes, et ne peuvent jamais traverser un namespace (un objet cluster-scoped ne peut être owner que d'objets cluster-scoped ; un objet namespaced, que d'objets du même namespace).",
+    "3 politiques de suppression en cascade — Background (par défaut) : le parent est supprimé IMMÉDIATEMENT, le garbage collector nettoie les enfants en arrière-plan de façon asynchrone. Foreground : le parent passe en « deletion in progress » (`metadata.deletionTimestamp` posé + finalizer `foregroundDeletion`), reste visible dans l'API tant que tous ses enfants portant `blockOwnerDeletion: true` n'ont pas été supprimés — le parent est donc supprimé EN DERNIER, après ses enfants. Orphan : le parent est supprimé immédiatement, mais les enfants restent intacts, sans owner — le garbage collector les ignore complètement."
   ],
   "note": [
-    "À retenir : « garbage collection » dans Kubernetes n'est pas UN mécanisme, mais un terme générique qui recouvre plusieurs nettoyages indépendants selon la ressource concernée (images/conteneurs via le kubelet, Jobs terminés via le TTL Controller, objets orphelins via les references de propriété/ownerReferences — non détaillé ici)."
+    "À retenir : « garbage collection » dans Kubernetes n'est pas UN mécanisme, mais un terme générique qui recouvre 3 nettoyages indépendants selon la ressource concernée — images/conteneurs via le kubelet (niveau nœud), Jobs terminés via le TTL Controller (niveau cluster, kube-controller-manager), et suppression en cascade des objets liés via ownerReferences (niveau cluster aussi, mais piloté par le garbage collector controller, avec un choix de politique Background/Foreground/Orphan)."
   ],
   "refs": [
     "https://kubernetes.io/docs/concepts/architecture/garbage-collection/",
@@ -1170,6 +1172,30 @@ window.CKA.formation = window.CKA.formation || [];
   ],
   "refs": [
     "https://kubernetes.io/docs/tasks/administer-cluster/reserve-compute-resources/"
+  ]
+},
+{
+  "id": "f-j1-node-conditions-eviction",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Scheduler",
+  "title": "MemoryPressure & DiskPressure : les seuils d'éviction par défaut",
+  "lead": "Deux Node Conditions visibles au `kubectl describe node`, qui déclenchent l'éviction de Pods dès que le kubelet manque de marge sur le disque ou la mémoire.",
+  "body": [
+    "Configuration des seuils d'éviction, deux façons : via des flags au démarrage du kubelet, ou directement dans son fichier de config YAML (`KubeletConfiguration`).",
+    "Seuils « hard » par défaut (déclenchement immédiat, grace period 0s) — `memory.available` : 100Mi ; `nodefs.available` : 10 % (ou 1Gi, le plus grand des deux) ; `nodefs.inodesFree` : 5 % (ou 200Ki, le plus grand des deux)."
+  ],
+  "points": [
+    "MemoryPressure — condition déclenchée par le signal `memory.available` (calculé comme `capacity[memory] − stats.memory.workingSet`).",
+    "DiskPressure — condition déclenchée par PLUSIEURS signaux : `nodefs.available`/`nodefs.inodesFree` (système de fichiers du nœud) ET `imagefs.available`/`imagefs.inodesFree` (système de fichiers dédié aux images de conteneurs, si distinct) — c'est ce qui permet au kubelet de purger son filesystem quand les images prennent trop de place.",
+    "Visible via `kubectl describe node` — section `Conditions`, avec `Status: False` + raison `KubeletHasSufficientMemory`/`KubeletHasSufficientDisk` en temps normal, basculant à `Status: True` + `KubeletMemoryPressure`/`KubeletDiskPressure` une fois le seuil atteint.",
+    "Ordre de réaction du kubelet — d'abord réclamer des ressources SANS toucher aux Pods utilisateur (supprimer Pods/conteneurs morts, purger les images inutilisées) ; seulement si ça ne suffit pas, évincer des Pods, dans l'ordre QoS déjà vu (BestEffort → Burstable → Guaranteed, le plus gros consommateur d'abord dans chaque classe).",
+    "Auto-réparation — si les Pods évincés étaient gérés par un Deployment/StatefulSet, « the control plane (kube-controller-manager) creates new pods in place of the evicted pods » ailleurs dans le cluster : pas d'intervention manuelle nécessaire pour les workloads managés."
+  ],
+  "note": [
+    "Rappel déjà vu dans « QoS classes » : l'éviction par pression NE respecte PAS le `PodDisruptionBudget` ni le `terminationGracePeriodSeconds` du Pod — seul le `eviction-max-pod-grace-period` du kubelet s'applique, et seulement pour les seuils « soft »."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/concepts/scheduling-eviction/node-pressure-eviction/"
   ]
 },
 {

@@ -531,6 +531,33 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-logging-stacks-deploy",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "Déployer une stack de logs : Loki vs Elastic Stack, et le piège du disque plein",
+  "lead": "Suite de « Logs & observabilité » : comment ces stacks se déploient concrètement (DaemonSet, StatefulSet, Deployment), et pourquoi surveiller l'espace disque des nœuds n'est pas optionnel.",
+  "body": [
+    "Grafana Loki, l'alternative à l'Elastic Stack — « Loki is a horizontally-scalable, highly-available, multi-tenant log aggregation system inspired by Prometheus. » Différence fondamentale avec Elasticsearch : « Loki does not index the contents of the logs, but only indexes metadata about your logs as a set of labels for each log stream » — les données compressées vont dans du stockage objet (S3, GCS…), seul l'index de métadonnées reste léger. D'où un coût d'exploitation bien plus faible. Interrogé via LogQL (calqué sur PromQL) et exposé dans Grafana comme datasource, exactement comme Prometheus."
+  ],
+  "points": [
+    "Filebeat en DaemonSet — « You deploy Filebeat as a DaemonSet to ensure there's a running instance on each node of the cluster. » Un Pod par nœud, pour lire directement les logs des conteneurs écrits localement sur le nœud (`/var/log/containers`).",
+    "Elasticsearch en StatefulSet — « The chart deploys a StatefulSet and by default will do an automated rolling update of your cluster » (Helm chart officiel). Un StatefulSet parce qu'Elasticsearch a besoin de stockage persistant et d'une identité stable par instance. Alternative : le déployer HORS du cluster, sur des machines dédiées gérées comme un service standard.",
+    "Kibana — la couche de visualisation, la plus simple des trois : un Deployment classique (stateless), rien à persister.",
+    "ECK (Elastic Cloud on Kubernetes) — « Built on the Kubernetes Operator pattern, Elastic Cloud on Kubernetes (ECK) extends the basic Kubernetes orchestration capabilities to support the setup and management of Elasticsearch, Kibana, APM Server, Beats, Elastic Agent… » — un Operator (voir note « Controllers, CRD et Operator ») qui déploie et gère toute la stack (Elasticsearch/Kibana/Beats) sans configuration manuelle poussée. La config de Filebeat se fait alors en YAML, dans le champ `config` de la CRD `Beats`.",
+    "Le piège du disque plein sur les nœuds — deux gros consommateurs locaux : les LOGS et les IMAGES de conteneurs. Sans nettoyage régulier, le nœud atteint la condition `DiskPressure` (surveillée par le kubelet via `nodefs.available`/`nodefs.inodesFree`) : « The kubelet attempts to reclaim node-level resources before it terminates end-user pods. For example, it removes unused container images when disk resources are starved. » Si ça ne suffit pas, le kubelet évince des Pods, et dans les cas sévères le nœud peut passer `NotReady` — plus aucun nouveau conteneur ne peut y démarrer."
+  ],
+  "note": [
+    "À relier à « Logs & observabilité » (le pourquoi/le socle 12-Factor) et à « Controllers, CRD et Operator » (ECK en est un exemple concret, comme CloudNativePG pour PostgreSQL)."
+  ],
+  "refs": [
+    "https://grafana.com/docs/loki/latest/get-started/overview/",
+    "https://www.elastic.co/guide/en/beats/filebeat/current/running-on-kubernetes.html",
+    "https://www.elastic.co/guide/en/cloud-on-k8s/current/k8s-overview.html",
+    "https://github.com/elastic/helm-charts/tree/main/elasticsearch",
+    "https://kubernetes.io/docs/concepts/scheduling-eviction/node-pressure-eviction/"
+  ]
+},
+{
   "id": "f-j1-schema-infra",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Control plane & etcd",

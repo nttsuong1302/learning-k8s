@@ -1093,13 +1093,16 @@ window.CKA.formation = window.CKA.formation || [];
     "Burstable — le Pod ne remplit pas les critères Guaranteed, mais au moins un conteneur a une request OU une limite de CPU/mémoire déclarée. C'est LA zone de « burst » : le Pod démarre garanti au niveau de sa request, et peut grimper jusqu'à sa limite si des ressources sont disponibles. Évincé seulement après TOUS les Pods BestEffort.",
     "BestEffort — aucun conteneur du Pod n'a de request NI de limite CPU/mémoire déclarée. Utilise ce qui reste des autres classes. « The kubelet prefers to evict these Pods first when node resources are scarce » — les premiers sacrifiés en cas de pénurie.",
     "Bien dimensionner, ce n'est PAS minimiser — sous-provisionner (requests trop basses) expose à l'éviction/OOMKill/throttling ; sur-provisionner gaspille de la capacité (moins de Pods par nœud, plus de nœuds que nécessaire, donc plus cher). L'objectif : une request/limite en adéquation avec l'usage réel du workload.",
-    "Bénéfices d'un bon dimensionnement (retour de formation, cohérent avec les classes QoS officielles) — meilleure utilisation des nœuds, comportement d'éviction prévisible (on sait qui saute en premier grâce à la QoS), scheduling plus efficace, densité de cluster optimale."
+    "Bénéfices d'un bon dimensionnement (retour de formation, cohérent avec les classes QoS officielles) — meilleure utilisation des nœuds, comportement d'éviction prévisible (on sait qui saute en premier grâce à la QoS), scheduling plus efficace, densité de cluster optimale.",
+    "Ordre d'éviction officiel, confirmé — sous pression sur un nœud, le kubelet évince dans cet ordre : BestEffort en premier, puis Burstable, puis Guaranteed en dernier. « Guaranteed pods are only evicted when cluster or system integrity is at risk. » Exemple concret cité en formation : si les composants du control plane tournent en Pods statiques sur un nœud sous pression, ils ne sont normalement PAS évincés — sauf cas particulier où leur manifeste static Pod a une priorité plus basse que d'autres Pods du control plane, auquel cas le kubelet peut ne pas réussir à leur faire de la place."
   ],
   "note": [
-    "Outils pour objectiver le dimensionnement, cités en formation : `kubectl top pod` (instantané), la stack Prometheus/Grafana (comparer usage réel vs déclaré dans le temps — voir notes dédiées), les jauges d'usage des cloud providers, et le VPA en mode recommandation (voir note « VPA en pratique »)."
+    "Outils pour objectiver le dimensionnement, cités en formation : `kubectl top pod` (instantané), la stack Prometheus/Grafana (comparer usage réel vs déclaré dans le temps — voir notes dédiées), les jauges d'usage des cloud providers, et le VPA en mode recommandation (voir note « VPA en pratique »).",
+    "Nuance officielle importante sur l'éviction par pression : contrairement à une terminaison normale, elle NE respecte PAS le PodDisruptionBudget ni le `terminationGracePeriodSeconds` — grace period de 0s en cas de seuil « hard » (arrêt immédiat)."
   ],
   "refs": [
-    "https://kubernetes.io/docs/concepts/workloads/pods/pod-qos/"
+    "https://kubernetes.io/docs/concepts/workloads/pods/pod-qos/",
+    "https://kubernetes.io/docs/concepts/scheduling-eviction/node-pressure-eviction/"
   ]
 },
 {
@@ -1123,6 +1126,27 @@ window.CKA.formation = window.CKA.formation || [];
     "https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/README.md",
     "https://github.com/kubernetes/autoscaler/blob/master/vertical-pod-autoscaler/docs/api.md",
     "https://goldilocks.docs.fairwinds.com/"
+  ]
+},
+{
+  "id": "f-j1-node-allocatable",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Scheduler",
+  "title": "Node Capacity vs Allocatable : le delta qu'on oublie",
+  "lead": "Un nœud avec « 2 vCPU » n'offre jamais 2 vCPU aux Pods — une partie est toujours réservée pour que le nœud lui-même reste vivant.",
+  "body": [
+    "« 'Allocatable' on a Kubernetes node is defined as the amount of compute resources that are available for pods. The scheduler does not over-subscribe 'Allocatable'. » Sans réservation, « pods can consume all the available capacity on a node by default […] nodes typically run quite a few system daemons that power the OS and Kubernetes itself. Unless resources are set aside for these system daemons, pods and system daemons compete for resources and lead to resource starvation issues on the node. »"
+  ],
+  "points": [
+    "La formule officielle — `Allocatable = Capacity − Reserved`, avec 3 composantes réservées : `kubeReserved` (kubelet, container runtime), `systemReserved` (démons OS — sshd, udev, mémoire noyau), et `evictionHardThresholds` (marge de sécurité contre la famine de ressources au niveau du nœud).",
+    "Concret — un nœud « 2 vCPU » peut, selon la config, avoir seulement ~1,8 vCPU réellement allocatable aux Pods (chiffre d'exemple cité en formation, PAS une valeur fixe universelle) : la différence part dans le fonctionnement du nœud lui-même.",
+    "Ça varie — le montant exact réservé dépend de la distribution Kubernetes utilisée (kubeadm, RKE2, EKS…) et peut même différer légèrement d'une version de Kubernetes à l'autre pour une même distribution."
+  ],
+  "note": [
+    "Conséquence directe pour le scheduler (voir note « Requests & Limits ») : c'est bien sur l'ALLOCATABLE, pas sur la capacité brute affichée, que se fait le calcul de bin-packing — un Pod peut rester `Pending` alors que la capacité totale du nœud semblait suffisante, simplement parce que la réserve système grignote la marge disponible."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/tasks/administer-cluster/reserve-compute-resources/"
   ]
 },
 {

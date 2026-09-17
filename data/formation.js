@@ -479,6 +479,32 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-aggregation-layer",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "API Aggregation Layer : étendre l'API sans passer par une CRD",
+  "lead": "Utile quand tu veux exposer une API Kubernetes-native SANS forcément stocker la donnée dans etcd — typiquement pour des métriques.",
+  "body": [
+    "Suite de la note « Controllers, CRD et Operator » : la CRD n'est pas la seule façon d'étendre l'API. « The aggregation layer runs in-process with the kube-apiserver […] The aggregation layer is different from Custom Resource Definitions, which are a way to make the kube-apiserver recognise new kinds of object. » La différence clé : une CRD sert à faire reconnaître et STOCKER un nouveau type d'objet ; l'aggregation layer sert à exposer une API qui n'a pas forcément besoin d'être stockée dans etcd — le cas d'école étant les métriques (calculées à la volée, pas persistées).",
+    "Comment ça marche — un objet `APIService` « claims » un chemin d'URL (ex. `/apis/myextension.mycompany.io/v1/…`) dans l'API Kubernetes. Une fois enregistré, « the aggregation layer will proxy anything sent to that API path […] to the registered APIService » : kube-apiserver agit comme un reverse proxy vers un service backend (ton « extension API server », qui tourne dans des Pods du cluster)."
+  ],
+  "points": [
+    "APIService — objet cluster-scoped (pas namespaced), donc il doit toujours préciser le `namespace` du Service cible dans son `spec.service` (avec `name`, `namespace`, `group`, `version`). Le nom de l'objet suit le format `<version>.<group>`.",
+    "Activer la couche d'agrégation, kube-apiserver a besoin de deux catégories de flags — les certificats (`--proxy-client-cert-file`, `--proxy-client-key-file`, `--requestheader-client-ca-file`, plus les headers `--requestheader-*`) pour sécuriser la communication kube-apiserver ↔ extension API server, ET `--enable-aggregator-routing=true` pour activer le routage lui-même.",
+    "Exigence de perf — « Extension API servers should have low latency networking to and from the kube-apiserver. Discovery requests are required to round-trip from the kube-apiserver in five seconds or less. »",
+    "Exemple concret : Metrics Server & HPA — « You must enable the API aggregation layer and register an APIService for the metrics.k8s.io API. » Le Metrics Server « implements the Metrics API […] to feed resource usage metrics to K8s autoscaler components. » Le HorizontalPodAutoscaler lit ensuite le CPU/mémoire via cette API agrégée — sans jamais interroger etcd pour ça.",
+    "Métriques custom — pour aller au-delà de CPU/mémoire (des métriques business, ou issues de Prometheus), la doc renvoie vers « a second metrics pipeline that uses the Custom Metrics API », complémentaire à l'API Metrics simple — c'est ce qui permet à HPA de scaler sur des métriques qui ne sont pas juste des ressources."
+  ],
+  "note": [
+    "Résumé du formateur, à retenir dans l'ordre : Controller (boucle de contrôle qui réconcilie) → CRD (étend l'API, avec stockage) → Operator (CRD + controller combinés pour automatiser une appli) → Admission controllers/webhooks (interceptent CHAQUE requête à l'API server pour valider/muter, voir note « Admission webhooks ») → Aggregation layer (étend l'API SANS forcément stocker, cette fiche)."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/apiserver-aggregation/",
+    "https://kubernetes.io/docs/tasks/extend-kubernetes/configure-aggregation-layer/",
+    "https://kubernetes.io/docs/tasks/debug/debug-cluster/resource-metrics-pipeline/"
+  ]
+},
+{
   "id": "f-j1-schema-infra",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Control plane & etcd",

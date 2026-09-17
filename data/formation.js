@@ -879,7 +879,10 @@ window.CKA.formation = window.CKA.formation || [];
     "StorageClass — « provides a way for administrators to describe the classes of storage they offer. Different classes might map to quality-of-service levels, or to backup policies, or to arbitrary policies determined by the cluster administrators. » Kubernetes lui-même n'a pas d'avis sur ce que représentent ces classes — la doc compare ça aux « profiles » d'autres systèmes de stockage. « This provisioning is based on StorageClasses: the PVC must request a storage class and the administrator must have created and configured that class » — au moins une StorageClass est donc nécessaire pour satisfaire des PVC en provisioning dynamique.",
     "Champs d'une StorageClass, et ce qui est VRAIMENT obligatoire — seul `provisioner` doit être spécifié (« This field must be specified. »). `parameters` (config spécifique au provisioner) et `reclaimPolicy` (défaut : `Delete` si absent) sont documentés ensemble mais restent optionnels ; `allowVolumeExpansion`, `volumeBindingMode` (défaut : `Immediate`) et `allowedTopologies` aussi.",
     "Le nom d'une StorageClass compte — c'est ce que l'utilisateur indique dans son PVC (`storageClassName`) pour demander cette classe précise.",
-    "Provisioners tiers, deux exemples concrets — NetApp Trident (« designed from the ground up to help you meet your containerized applications' persistence demands using industry-standard interfaces, such as the Container Storage Interface (CSI) » ; supporte ONTAP, Element/SolidFire, Azure NetApp Files, Google Cloud NetApp Volumes, Amazon FSx for ONTAP) et Portworx (« Portworx implements a CSI driver that integrates with the Kubernetes storage framework, enabling dynamic provisioning, snapshotting, cloning, and volume expansion » ; va au-delà avec Portworx Backup et Disaster Recovery)."
+    "Provisioners tiers, deux exemples concrets — NetApp Trident (« designed from the ground up to help you meet your containerized applications' persistence demands using industry-standard interfaces, such as the Container Storage Interface (CSI) » ; supporte ONTAP, Element/SolidFire, Azure NetApp Files, Google Cloud NetApp Volumes, Amazon FSx for ONTAP) et Portworx (« Portworx implements a CSI driver that integrates with the Kubernetes storage framework, enabling dynamic provisioning, snapshotting, cloning, and volume expansion » ; va au-delà avec Portworx Backup et Disaster Recovery).",
+    "Pré-provisionné (statique) — « A cluster administrator creates a number of PVs. They carry the details of the real storage, which is available for use by cluster users. They exist in the Kubernetes API and are available for consumption. » L'admin prépare le stock de PV à l'avance, une PVC vient ensuite matcher dessus (taille, access mode…).",
+    "Provisionné dynamiquement — « When none of the static PVs the administrator created match a user's PersistentVolumeClaim, the cluster may try to dynamically provision a volume specially for the PVC. » Le PV n'existe pas encore : il est créé à la demande via la StorageClass référencée par la PVC. Prérequis : l'admission controller `DefaultStorageClass` doit être activé sur l'API server.",
+    "Si rien ne matche — « Claims will remain unbound indefinitely if a matching volume does not exist. » La PVC reste `Pending` indéfiniment. Détail piège : une PVC avec `storageClassName: \"\"` désactive explicitement le provisioning dynamique pour elle-même — elle attend forcément un PV statique."
   ],
   "note": [
     "Lien StorageClass ↔ CSI, très concret : le champ `provisioner` d'une StorageClass EST le nom du CSI driver à utiliser (ex. NetApp Trident ou Portworx). La chaîne complète : PVC → StorageClass → provisioner (= CSI driver, voir note « CSI : définition & CSI driver ») → PV créé."
@@ -888,7 +891,8 @@ window.CKA.formation = window.CKA.formation || [];
     "https://kubernetes.io/docs/concepts/storage/persistent-volumes/",
     "https://kubernetes.io/docs/concepts/storage/storage-classes/",
     "https://github.com/NetApp/trident",
-    "https://docs.portworx.com/portworx-enterprise/operations/operate-kubernetes/storage-operations/csi"
+    "https://docs.portworx.com/portworx-enterprise/operations/operate-kubernetes/storage-operations/csi",
+    "https://kubernetes.io/docs/concepts/storage/persistent-volumes/#provisioning"
   ]
 },
 {
@@ -906,6 +910,9 @@ window.CKA.formation = window.CKA.formation || [];
     "CSI driver — implémente les services Identity, Node, et optionnellement Controller définis par la spécification CSI ; c'est une application conteneurisée, développée et déployée librement par chaque fournisseur de stockage.",
     "Controller Plugin — déployé en Deployment ou StatefulSet, sur n'importe quel nœud du cluster : « generally does not need direct access to the host and can perform all its operations through the Kubernetes API » (provisioning, attachment des volumes…).",
     "Node Plugin — déployé en DaemonSet, sur CHAQUE nœud du cluster, car il lui faut « direct access to the host for making block devices and/or filesystem mounts available to the Kubernetes kubelet ».",
+    "Architecture réelle des Pods — le conteneur CSI driver n'est jamais seul : des « sidecar containers » officiels, développés par la communauté kubernetes-csi (pas par le fournisseur de stockage), sont « bundled with third-party CSI driver containers and deployed together as pods », pour « watch the Kubernetes API, trigger appropriate operations against the \"CSI volume driver\" container, and update the Kubernetes API as appropriate ». Le fournisseur se concentre sur l'implémentation de l'interface CSI, les sidecars gèrent toute la logique Kubernetes.",
+    "Sidecars du Controller Plugin — « external-provisioner, external-attacher, external-snapshotter, and external-resizer » : ils surveillent respectivement les PVC (déclenchent CreateVolume), les VolumeAttachment (déclenchent ControllerPublishVolume), les demandes de snapshot, et les demandes de redimensionnement — plus souvent un `livenessprobe`.",
+    "Sidecar du Node Plugin — un seul : le `node-driver-registrar`, qui « consists of the CSI driver that implements the CSI Node service and the node-driver-registrar sidecar container » — il enregistre le driver CSI auprès du kubelet de CHAQUE nœud pour qu'il sache le découvrir et lui parler.",
     "Les opérations CSI (RPC Controller/Node) — CreateVolume/DeleteVolume (provisionner/déprovisionner), ControllerPublishVolume (rendre le volume disponible pour un nœud donné), NodeStageVolume/NodePublishVolume (préparer puis monter le volume dans le namespace du conteneur — le « Mount/Unmount » des notes de cours), CreateSnapshot/DeleteSnapshot (capturer/supprimer un snapshot), ControllerExpandVolume/NodeExpandVolume (agrandir la capacité côté stockage, puis étendre le filesystem pour en profiter).",
     "CSIDriver — objet Kubernetes qui décrit les capacités et exigences d'un driver CSI donné, déployé par le fournisseur de stockage.",
     "Dans le spec d'un Pod, un volume `csi` référence : `driver` (le nom du CSI driver), `volumeAttributes` (attributs passés au driver), `fsType`, `readOnly`, et `nodePublishSecretRef` (secret pour l'authentification)."
@@ -916,6 +923,7 @@ window.CKA.formation = window.CKA.formation || [];
   "refs": [
     "https://kubernetes-csi.github.io/docs/",
     "https://kubernetes-csi.github.io/docs/deploying.html",
+    "https://kubernetes-csi.github.io/docs/sidecar-containers.html",
     "https://kubernetes.io/docs/concepts/storage/volumes/",
     "https://raw.githubusercontent.com/container-storage-interface/spec/master/spec.md"
   ]

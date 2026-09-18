@@ -446,7 +446,8 @@
       </div>
       <div class="qbar"><span style="width:${((i + 1) / FORMATION.length) * 100}%"></span></div>
       <div class="qtags"><span class="tag">${esc(n.day)}</span></div>
-      <div class="qcard">
+      <div class="qcard formation-slide">
+        <div class="formation-eyebrow">${esc(n.section)}</div>
         <h2 class="qtext">${fmt(n.title)}</h2>
         <p class="scenario"><b>${fmt(n.lead)}</b></p>
         ${diagram}
@@ -460,6 +461,38 @@
         <button class="btn" data-formation-next ${i === FORMATION.length - 1 ? "disabled" : ""}>Suivant →</button>
       </div>`;
     formationPos = i;
+  }
+
+  // Écran de transition entre deux sections, affiché en avançant d'un sujet à l'autre.
+  function renderFormationChapter(section, pendingIndex, backIndex) {
+    const list = FORMATION.filter((n) => n.section === section);
+    const items = list.map((n) => `<li>${fmt(n.title)}</li>`).join("");
+    app.innerHTML = `
+      <div class="qtop">
+        <button class="btn ghost sm" data-formation-index>← Liste</button>
+        <div class="qtitle">🎓 Notes de formation</div>
+        <div class="qcount">${pendingIndex + 1} / ${FORMATION.length}</div>
+      </div>
+      <div class="qbar"><span style="width:${(pendingIndex / FORMATION.length) * 100}%"></span></div>
+      <div class="chapter-slide">
+        <div class="chapter-kicker">Chapitre suivant</div>
+        <h2 class="chapter-title">${esc(section)}</h2>
+        <div class="chapter-count">${list.length} fiche${list.length > 1 ? "s" : ""}</div>
+        <ul class="chapter-list">${items}</ul>
+      </div>
+      <div class="qnav">
+        <button class="btn ghost" data-formation-chapter-back="${backIndex}">← Précédent</button>
+        <button class="btn" data-formation-chapter-continue="${pendingIndex}">Commencer →</button>
+      </div>`;
+  }
+
+  // Avance vers la fiche suivante ; passe par un écran de chapitre si on change de section.
+  function goFormationNext() {
+    const i = formationPos;
+    if (i >= FORMATION.length - 1) return;
+    const next = i + 1;
+    if (FORMATION[next].section !== FORMATION[i].section) renderFormationChapter(FORMATION[next].section, next, i);
+    else renderFormationReader(next);
   }
 
   // ============================ SESSION ============================
@@ -664,7 +697,11 @@
     const fo = t.closest("[data-formation-open]");
     if (fo) { renderFormationReader(parseInt(fo.getAttribute("data-formation-open"), 10)); return; }
     if (t.closest("[data-formation-prev]") && !t.closest("[data-formation-prev]").disabled) { renderFormationReader(formationPos - 1); return; }
-    if (t.closest("[data-formation-next]") && !t.closest("[data-formation-next]").disabled) { renderFormationReader(formationPos + 1); return; }
+    if (t.closest("[data-formation-next]") && !t.closest("[data-formation-next]").disabled) { goFormationNext(); return; }
+    const cc = t.closest("[data-formation-chapter-continue]");
+    if (cc) { renderFormationReader(parseInt(cc.getAttribute("data-formation-chapter-continue"), 10)); return; }
+    const cb = t.closest("[data-formation-chapter-back]");
+    if (cb) { renderFormationReader(parseInt(cb.getAttribute("data-formation-chapter-back"), 10)); return; }
     if (t.closest("[data-prev]") && !t.closest("[data-prev]").disabled) { session.i--; renderQuestion(); return; }
     if (t.closest("[data-next]")) { if (session.i < session.list.length - 1) { session.i++; renderQuestion(); } else { session = null; renderHome(); } return; }
 
@@ -682,6 +719,21 @@
     }
     if (t.closest("[data-reset]")) {
       if (confirm("Réinitialiser toute la progression ?")) { progress = {}; saveProg(progress); renderHome(); }
+    }
+  });
+
+  // Navigation clavier façon présentation (← / →) quand une slide de formation est affichée.
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+    if (!document.querySelector(".formation-slide, .chapter-slide")) return;
+    const tag = (document.activeElement || {}).tagName || "";
+    if (tag === "INPUT" || tag === "TEXTAREA") return;
+    if (e.key === "ArrowRight") {
+      const b = document.querySelector("[data-formation-next]:not([disabled]), [data-formation-chapter-continue]");
+      if (b) b.click();
+    } else {
+      const b = document.querySelector("[data-formation-prev]:not([disabled]), [data-formation-chapter-back]");
+      if (b) b.click();
     }
   });
 

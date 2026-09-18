@@ -1280,6 +1280,62 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-release-cycle",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Control plane & etcd",
+  "title": "Cycle de release Kubernetes : pas de LTS, 3 fois par an",
+  "lead": "Kubernetes va à contre-courant de l'open source classique : pas de version qui reste indéfiniment, une succession de releases mineures avec une fenêtre de support glissante.",
+  "body": [
+    "« Kubernetes releases currently happen approximately three times per year » — confirmé, ~4 mois entre deux versions. Un cycle dure environ 14 semaines : développement normal (~11 semaines, features basées sur des issues/KEP), puis code freeze (~2 à 4 semaines) où seuls les bugs critiques et failles de sécurité sont corrigés avant de merger la release finale — souvent annoncée à une KubeCon/CloudNativeCon.",
+    "Fenêtre de support : « Kubernetes 1.19 and newer receive approximately 1 year of patch support » et « The Kubernetes project maintains release branches for the most recent three minor releases » — donc à un instant T, 3 versions mineures sont officiellement supportées (ex. 1.37/1.36/1.35), tout ce qui est en dessous est considéré obsolète."
+  ],
+  "points": [
+    "Précision par rapport à une formulation entendue en formation (« ce cycle est suivi par le SIG qui s'appelle Release Team ») : ce n'est pas tout à fait ça — c'est SIG Release qui est le SIG (« maintained by SIG Release and has representation from the various SIGs' leadership »), et le Release Team est une équipe dédiée, reformée à CHAQUE release (rôles comme Enhancements Lead, Bug Triage Lead…), qui exécute le processus sous l'égide de SIG Release — pas un SIG en soi.",
+    "Pratique personnelle citée en formation (retour d'expérience, pas une prescription officielle) : ne jamais rester sur la toute dernière version — le formateur upgrade sa version N vers N+1 seulement quand la version N+2 est annoncée, soit environ une mise à jour de cluster tous les 6-7 mois, ce qui laisse une marge pour mettre à jour le reste de la stack (Ingress/Gateway, observabilité, backup) avant la prochaine bascule."
+  ],
+  "refs": [
+    "https://kubernetes.io/releases/",
+    "https://kubernetes.io/releases/release/"
+  ]
+},
+{
+  "id": "f-j1-version-skew-policy",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Control plane & etcd",
+  "title": "Version skew : de combien de versions le control plane peut-il devancer les nœuds ?",
+  "lead": "Plus de marge qu'on ne le pense — de quoi étaler un upgrade de nœuds sur plusieurs mois sans être hors politique.",
+  "body": [
+    "Précision par rapport à une formulation entendue en formation (« le control plane ne prend en charge qu'une version plus vieille que la sienne ») : la marge réelle est BEAUCOUP plus large — « kubelet may be up to three minor versions older than kube-apiserver (kubelet < 1.25 may only be up to two minor versions older than kube-apiserver) ». Exemple officiel : apiserver en 1.37 → kubelet supporté en 1.37, 1.36, 1.35 ET 1.34."
+  ],
+  "points": [
+    "Ordre imposé : « The kube-apiserver instances the kubelet communicates with are at 1.37 » AVANT de pouvoir upgrader les kubelet — donc toujours control plane d'abord, nœuds ensuite (jamais l'inverse), mais les nœuds n'ont pas à suivre immédiatement.",
+    "Avertissement officiel à prendre au sérieux : « Running a cluster with kubelet instances that are persistently three minor versions behind kube-apiserver means they must be upgraded before the control plane can be upgraded » — le skew maximal (3 versions) n'est pas un objectif confortable, c'est une limite dure qui bloque le PROCHAIN upgrade du control plane si elle est atteinte.",
+    "Ce qui ne compte PAS dans ce calcul : le 3ᵉ chiffre (patch version). Une politique de skew s'exprime uniquement en versions MINEURES — être en 1.35.1 ou 1.35.11 ne change rien à la compatibilité."
+  ],
+  "refs": [
+    "https://kubernetes.io/releases/version-skew-policy/"
+  ]
+},
+{
+  "id": "f-j1-upgrade-methods",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Control plane & etcd",
+  "title": "Upgrader un cluster : recréer vs mettre à jour en place",
+  "lead": "Deux philosophies opposées — dupliquer l'infra pour basculer proprement, ou upgrader sur place au prix d'un jeu de taquin control plane → nœuds.",
+  "body": [
+    "Méthode 1 — recréer et détruire : on provisionne un nouveau cluster à la version cible, on y migre les workloads, on bascule le trafic, puis on détruit l'ancien (voir note « Ingress controllers : le marché » pour le pattern load-balancer-en-amont qui rend cette bascule DNS-transparente). Idéal en stateless ; l'inconvénient assumé est le coût de l'infra qui tourne en double pendant la migration.",
+    "Méthode 2 — upgrade in-place, ordre imposé par kubeadm : « 1. Upgrade a primary control plane node. 2. Upgrade additional control plane nodes. 3. Upgrade worker nodes » — et « The upgrade procedure on control plane nodes should be executed one node at a time. » Pour chaque nœud worker : « you must first drain the node », puis upgrader kubelet/kubectl, puis décordonner — un par un, jamais tous en même temps (voir note « Maintenance de nœud »)."
+  ],
+  "points": [
+    "Avant TOUTE mise à jour : « Make sure to back up any important components, such as app-level state stored in a database. kubeadm upgrade does not touch your workloads, only components internal to Kubernetes, but backups are always a best practice » — donc un snapshot etcd (voir note « etcdctl vs etcdutl ») plus les backups applicatifs pertinents.",
+    "Lire les release notes est non négociable, pas juste une bonne pratique : des API peuvent casser sans prévenir un cluster mal préparé — exemple réel cité en formation, `Ingress` `extensions/v1beta1`/`networking.k8s.io/v1beta1` retirés en v1.22 au profit de `networking.k8s.io/v1` (disponible depuis la 1.19). Tout manifeste encore écrit en v1beta1 cessait purement de fonctionner — d'où la nécessité, pour un Helm chart générique, de détecter la version de Kubernetes et servir le bon apiVersion en conséquence."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-upgrade/",
+    "https://kubernetes.io/docs/reference/using-api/deprecation-guide/"
+  ]
+},
+{
   "id": "f-j1-scheduler-filter-score",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Scheduler",

@@ -1552,6 +1552,24 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-taints-tolerations",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Scheduler",
+  "title": "Taints & Tolerations : réserver des nœuds à un usage (les 3 niveaux)",
+  "lead": "Un taint REPOUSSE les Pods qui n'ont pas la tolérance associée — le mécanisme exactement inverse de l'affinity, qui ATTIRE.",
+  "body": [
+    "« Node affinity is a property of Pods that attracts them to a set of nodes. Taints are the opposite -- they allow a node to repel a set of pods. » Un taint se définit par `key`, `value`, `effect` (ex. `kubectl taint nodes node1 key1=value1:NoSchedule`)."
+  ],
+  "points": [
+    "Les 3 effets confirment exactement les 3 niveaux décrits en formation : `NoExecute` — « Pods that do not tolerate the taint are evicted immediately » (les Pods déjà présents SANS tolérance sont virés) ; `NoSchedule` — « No new Pods will be scheduled on the tainted node unless they have a matching toleration » MAIS « Pods currently running on the node are NOT evicted » (les nouveaux sont bloqués, les existants restent) ; `PreferNoSchedule` — « soft version of NoSchedule » : « the control plane will try to avoid placing a Pod... but it is not guaranteed ».",
+    "Toleration — champs `key`, `operator` (`Exists` : pas de `value` requise ; `Equal` : `value` obligatoire), `effect` (doit matcher celui du taint), et `tolerationSeconds` — « optional field that dictates how long a pod will stay bound to the node after a NoExecute taint is added. After this duration expires, the pod is evicted » (uniquement pertinent avec `NoExecute`).",
+    "Confirmation d'une affirmation entendue en formation (concaténer nodeSelector + taint/toleration pour un nœud \"quasi exclusivement dédié\") : c'est cohérent avec la doc — un taint seul REPOUSSE les Pods sans tolérance, mais n'empêche PAS un autre Pod qui AURAIT la même tolérance de s'y poser ; pour garantir qu'un nœud n'héberge QUE les Pods voulus, il faut en plus les ATTIRER explicitement via `nodeSelector`/`nodeAffinity` — taint/toleration et affinity sont complémentaires, pas substituables l'un à l'autre."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/"
+  ]
+},
+{
   "id": "f-j1-secrets-base64",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Secrets & sécurité",

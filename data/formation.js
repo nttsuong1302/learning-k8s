@@ -1968,6 +1968,67 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-vap-map",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Secrets & sécurité",
+  "title": "ValidatingAdmissionPolicy / MutatingAdmissionPolicy : l'alternative native aux webhooks",
+  "lead": "Kubernetes embarque désormais nativement ce que Kyverno/OPA Gatekeeper faisaient de l'extérieur : des règles déclarées en CEL, sans webhook à opérer soi-même.",
+  "body": [
+    "À relier à « Policy engines » : la doc officielle définit ValidatingAdmissionPolicy comme « a declarative, in-process alternative to validating admission webhooks » — même rôle que Kyverno/OPA Gatekeeper, mais exécuté directement dans le kube-apiserver (pas de service HTTP externe à déployer, pas de latence réseau, pas de certificat à gérer)."
+  ],
+  "points": [
+    "Deux ressources obligatoires pour ValidatingAdmissionPolicy (VAP) : la `ValidatingAdmissionPolicy` elle-même — « describes the abstract logic of a policy », avec `spec.matchConstraints.resourceRules` (apiGroups/apiVersions/operations/resources ciblés) et `spec.validations` (les expressions CEL) — et la `ValidatingAdmissionPolicyBinding`, qui « links the above resources together and provides scoping » via `spec.policyName` et `spec.matchResources.namespaceSelector`. « At least a ValidatingAdmissionPolicy and a corresponding ValidatingAdmissionPolicyBinding must be defined for a policy to have an effect. »",
+    "`spec.validationActions`, trois valeurs possibles sur le binding — `Deny` (« Validation failure results in a denied request »), `Warn` (« Validation failure is reported to the request client as a warning »), `Audit` (« Validation failure is included in the audit event for the API request »). `Deny` et `Warn` ne peuvent pas être combinés (ça dupliquerait inutilement l'erreur).",
+    "MutatingAdmissionPolicy (MAP) suit le même principe côté mutation : jusqu'à 3 ressources (`MutatingAdmissionPolicy`, une ressource de paramètres optionnelle, `MutatingAdmissionPolicyBinding`), mutations exprimées en CEL sous forme `ApplyConfiguration` (server-side apply) ou `JSONPatch`. Stable depuis la v1.36 (activé par défaut), disponible pour la première fois en v1.30."
+  ],
+  "note": [
+    "Confirmation d'une affirmation entendue en formation : présenter VAP/MAP comme « l'implémentation native de ce que fait OPA Gatekeeper » est exactement ce que dit la doc officielle — Gatekeeper EST un webhook (externe), VAP/MAP en sont l'équivalent in-process. Les trois actions citées en formation (denial/warn/audit) correspondent bien aux trois valeurs officielles de `validationActions` (Deny/Warn/Audit) — à ne pas confondre avec `enforcementAction` côté OPA Gatekeeper (deny/dryrun/warn, pas d'« audit » dans cette liste-là — voir note dédiée)."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/reference/access-authn-authz/validating-admission-policy/",
+    "https://kubernetes.io/docs/reference/access-authn-authz/mutating-admission-policy/"
+  ]
+},
+{
+  "id": "f-j1-opa-gatekeeper-internals",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Secrets & sécurité",
+  "title": "OPA Gatekeeper en pratique : ConstraintTemplate, Constraint et Rego",
+  "lead": "La mécanique concrète derrière la fiche « Policy engines » : comment une règle Rego devient une contrainte réellement appliquée à l'admission.",
+  "body": [
+    "Gatekeeper repose sur deux CRDs qui se complètent : `ConstraintTemplate` contient « Rego that enforces the constraint and the schema of the constraint » (le modèle de règle + ses paramètres configurables), et `Constraint` instancie ce template pour un usage concret — il référence le `ConstraintTemplate` et précise, via `match` (kinds/namespaces/labelSelector…), sur quelles ressources la règle s'applique, et via `parameters` sa configuration."
+  ],
+  "points": [
+    "Exemple officiel type « labels requis » — le template Rego suit le motif `package k8srequiredlabels` puis une règle `violation[{\"msg\": msg, \"details\": {...}}] { ... }` qui compare les labels présents à ceux exigés et lève une violation s'il en manque.",
+    "`enforcementAction` sur le `Constraint` — trois valeurs : `deny` (par défaut, bloque la requête), `dryrun` et `warn`. C'est une liste différente de celle de ValidatingAdmissionPolicy (`Deny`/`Warn`/`Audit`) — Gatekeeper n'a pas d'action `audit` à ce niveau-là.",
+    "Le mode audit de Gatekeeper est séparé de `enforcementAction` : c'est un scan continu des ressources déjà existantes dans le cluster, qui « evaluates resources and reports violations » sans rien bloquer — c'est ce qui permet de repérer les ressources non conformes créées avant que la règle n'existe."
+  ],
+  "refs": [
+    "https://open-policy-agent.github.io/gatekeeper/website/docs/howto"
+  ]
+},
+{
+  "id": "f-j1-kyverno-internals",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Secrets & sécurité",
+  "title": "Kyverno en pratique : ClusterPolicy, admission review et Enforce/Audit",
+  "lead": "Comment Kyverno intercepte une requête, la valide ou la mute, puis rend compte — la mécanique derrière la fiche « Policy engines ».",
+  "body": [
+    "Kyverno fonctionne comme « a dynamic admission controller » : son webhook reçoit les `AdmissionReview` envoyées par le kube-apiserver et les transmet à son moteur (« Engine »), qui évalue les `ClusterPolicy` correspondantes (règles `validate` et/ou `mutate`) et renvoie une décision d'autorisation ou de rejet. Pour les ressources déjà existantes (créées avant la policy), le Background Controller effectue un scan périodique et génère des `PolicyReport`/`ClusterPolicyReport` — sans passer par l'admission."
+  ],
+  "points": [
+    "Sur une règle `validate`, l'action en cas de non-conformité (historiquement `validationFailureAction`, aujourd'hui dépréciée au profit de `spec.rules[*].validate[*].failureAction`) prend deux valeurs : `Enforce` (bloque la création/mise à jour de la ressource non conforme) ou `Audit` (la ressource est acceptée, la violation est seulement journalisée dans un `PolicyReport`/`ClusterPolicyReport`).",
+    "Cas particulier documenté — pour une ressource déjà non conforme AVANT la création d'une policy en mode `Enforce`, Kyverno continue par défaut d'autoriser ses mises à jour ultérieures (pour ne pas bloquer l'existant) ; ce comportement se désactive avec `validate.allowExistingViolations: false`."
+  ],
+  "note": [
+    "Précision par rapport à une formulation entendue en formation : la valeur correcte est `Enforce` (pas « unforced », probable coquille de transcription/prononciation) — le trainer avait bien identifié le comportement (bloquer si non conforme), seule l'orthographe du mot manquait."
+  ],
+  "refs": [
+    "https://kyverno.io/docs/policy-types/cluster-policy/validate/",
+    "https://kyverno.io/docs/introduction/how-kyverno-works/"
+  ]
+},
+{
   "id": "f-j1-pvc-storageclass",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Storage",

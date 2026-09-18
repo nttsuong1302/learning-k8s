@@ -44,6 +44,16 @@
   }
 
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  // Formatte le texte des fiches : `code` -> <code>, « citation » -> span stylé.
+  const fmt = (s) => esc(s)
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/«\s*([^»]+?)\s*»/g, '<span class="quote-official">« $1 »</span>');
+  // Détecte un badge de type de contenu en tête de paragraphe (fiches de formation).
+  const blockBadge = (s) => {
+    if (/^Pr[ée]cision par rapport/i.test(s)) return { cls: "badge-precision", label: "⚠️ Précision" };
+    if (/^Confirmation d.une affirmation/i.test(s)) return { cls: "badge-confirm", label: "✅ Confirmé" };
+    return null;
+  };
   const shuffle = (a) => { const r = a.slice(); for (let i = r.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [r[i], r[j]] = [r[j], r[i]]; } return r; };
 
   // ---------- Notions transverses (détection par mots-clés dans le texte des questions déjà écrites,
@@ -381,7 +391,7 @@
 
   function formationCardHTML(n) {
     const gi = FORMATION.indexOf(n);
-    return `<button class="tech-card" data-formation-open="${gi}"><span class="tc-title">${esc(n.title)}</span><span class="tc-sum">${esc(n.lead)}</span></button>`;
+    return `<button class="tech-card" data-formation-open="${gi}"><span class="tc-title">${fmt(n.title)}</span><span class="tc-sum">${fmt(n.lead)}</span></button>`;
   }
 
   function renderFormationIndex() {
@@ -395,7 +405,7 @@
       const list = FORMATION.filter((n) => n.section === sec && match(n));
       if (!list.length) return "";
       const i = visibleSections.indexOf(sec);
-      return `<div class="tech-group" id="fsec-${i}"><h3>${esc(sec)} <span>${list.length}</span></h3><div class="tech-list">${list.map(formationCardHTML).join("")}</div></div>`;
+      return `<div class="tech-group formation-group" id="fsec-${i}"><h3>${esc(sec)} <span>${list.length}</span></h3><div class="tech-list">${list.map(formationCardHTML).join("")}</div></div>`;
     }).join("");
     app.innerHTML = `
       <div class="qtop">
@@ -414,10 +424,16 @@
   function renderFormationReader(i) {
     if (i < 0) i = 0; if (i > FORMATION.length - 1) i = FORMATION.length - 1;
     const n = FORMATION[i];
-    const body = (n.body || []).map((p) => `<p>${esc(p)}</p>`).join("");
     const diagram = n.diagram ? `<img class="formation-diagram" src="${esc(n.diagram)}" alt="${esc(n.title)}" loading="lazy">` : "";
-    const points = (n.points || []).length ? `<ul class="tech-points">${n.points.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>` : "";
-    const note = (n.note || []).length ? `<div class="synth"><b>📌 À retenir</b>${n.note.map((p) => `<p>${esc(p)}</p>`).join("")}</div>` : "";
+    const body = (n.body || []).map((p, idx) => {
+      const badge = blockBadge(p);
+      return `<div class="fblock">
+        <div class="fblock-num">${String(idx + 1).padStart(2, "0")}</div>
+        <div class="fblock-body">${badge ? `<span class="fbadge ${badge.cls}">${badge.label}</span>` : ""}<p>${fmt(p)}</p></div>
+      </div>`;
+    }).join("");
+    const points = (n.points || []).length ? `<ul class="tech-points">${n.points.map((p) => `<li>${fmt(p)}</li>`).join("")}</ul>` : "";
+    const note = (n.note || []).length ? `<div class="synth"><b>📌 À retenir</b>${n.note.map((p) => `<p>${fmt(p)}</p>`).join("")}</div>` : "";
     const refs = (n.refs || []).map((r) => {
       const host = (r.match(/^https?:\/\/([^/]+)/) || [])[1] || "doc";
       return `<a class="doc-link" href="${esc(r)}" target="_blank" rel="noopener">📖 ${esc(host)} ↗</a>`;
@@ -431,13 +447,13 @@
       <div class="qbar"><span style="width:${((i + 1) / FORMATION.length) * 100}%"></span></div>
       <div class="qtags"><span class="tag">${esc(n.day)}</span></div>
       <div class="qcard">
-        <h2 class="qtext">${esc(n.title)}</h2>
-        <p class="scenario"><b>${esc(n.lead)}</b></p>
+        <h2 class="qtext">${fmt(n.title)}</h2>
+        <p class="scenario"><b>${fmt(n.lead)}</b></p>
         ${diagram}
-        ${body}
-        ${points}
+        <div class="fblocks">${body}</div>
+        ${points ? `<div class="fsection-label">Points clés</div>${points}` : ""}
         ${note}
-        <div class="doc-links">${refs}</div>
+        ${refs ? `<div class="fsection-label">Sources officielles</div><div class="doc-links">${refs}</div>` : ""}
       </div>
       <div class="qnav">
         <button class="btn ghost" data-formation-prev ${i === 0 ? "disabled" : ""}>← Précédent</button>

@@ -332,6 +332,54 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-ingress-resource-class",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "Ingress : resource + controller, et IngressClass",
+  "lead": "Suite de « Service LoadBalancer » : l'Ingress ajoute le niveau 7 — mais c'est une ressource native, pas une CRD, et ça ne fait RIEN sans un controller qui l'implémente.",
+  "body": [
+    "Précision par rapport à une formulation entendue en formation (l'Ingress présenté comme « l'instanciation d'une CRD ») : Ingress est en réalité une ressource NATIVE de l'API Kubernetes (`apiVersion: networking.k8s.io/v1`, `kind: Ingress`, stable depuis la v1.19) — pas une Custom Resource Definition. Les vraies CRD, ce sont certains controllers tiers qui en ajoutent PAR-DESSUS (Traefik avec `IngressRoute`, par exemple — voir plus bas).",
+    "Le modèle en 2 parties, officiel : « An Ingress controller is responsible for fulfilling the Ingress, usually with a load balancer. » Et surtout : « Only creating an Ingress resource has no effect » — sans controller installé, l'objet `Ingress` existe dans l'API mais ne route rien du tout."
+  ],
+  "points": [
+    "Une règle d'Ingress, dans les grandes lignes — host (nom de domaine), path (préfixe ou exact), port et Service cible. Exemple du type vu en formation : `myapp.mydomain.com/catalogue` → Service catalogue ; `myapp.mydomain.com/login` → un autre Service (ex. Keycloak) sur un autre port — plusieurs règles, plusieurs backends, un seul point d'entrée.",
+    "IngressClass — sélectionne QUEL controller traite un `Ingress` donné (champ `spec.ingressClassName`), utile dès qu'un cluster a plusieurs controllers installés en parallèle (une classe publique, une privée, une pour du testing…). Si `ingressClassName` est omis, c'est la classe par défaut du cluster qui s'applique.",
+    "Pourquoi plusieurs controllers en parallèle — isolation applicative (une appli très gourmande qui met un controller à genoux ne doit pas impacter les autres, donc son propre « tuyau » séparé) ou isolation multi-tenant (plusieurs clients sur un seul cluster, chacun avec son controller + namespace + resource limits + NetworkPolicy dédiés, en alternative à des clusters séparés).",
+    "Déploiement mécanique d'un controller — un Deployment + un Service (NodePort, mappé ensuite via un load balancer externe, cloud ou MetalLB — voir note « Service LoadBalancer »). Piège à connaître : l'IP à joindre pour atteindre une appli via Ingress, c'est l'IP PUBLIQUE du controller, jamais l'IP interne du Service applicatif.",
+    "Configuration, le pattern dominant — « 95 % » des Ingress controllers (chiffre de formation) se configurent via des ANNOTATIONS sur l'objet `Ingress` (chaque controller documente les siennes, ce qui rend le switch d'un controller à l'autre non trivial). Traefik s'en écarte en proposant ses propres CRDs (`IngressRoute`, `Middleware`, `TraefikService`, `TLSOptions`, `ServersTransport`) comme « building blocks that you can assemble according to your needs » — plus modulaire, mais spécifique à Traefik."
+  ],
+  "note": [
+    "À relier à « Solution réseau (CNI) » et « Service LoadBalancer » : la chaîne complète devient Service ClusterIP (interne) → Service LoadBalancer/NodePort (expose au niveau 4) → Ingress + IngressClass + controller (ajoute le niveau 7 : host/path routing, TLS)."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/concepts/services-networking/ingress/",
+    "https://doc.traefik.io/traefik/reference/install-configuration/providers/kubernetes/kubernetes-crd/"
+  ]
+},
+{
+  "id": "f-j1-ingress-controllers-market",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "Ingress controllers : le marché, et la retraite officielle d'ingress-nginx",
+  "lead": "Le paysage cité en formation (Traefik, Nginx, Contour, Istio, Kong, HAProxy, F5) — avec une confirmation lourde de conséquences : ingress-nginx est officiellement mort.",
+  "body": [
+    "Vérification à jour, et elle change la donne : le projet `ingress-nginx` a été retiré du support actif. Annonce officielle : « Best-effort maintenance will continue until March 2026. Afterward, there will be no further releases, no bugfixes, and no updates to resolve any security vulnerabilities that may be discovered. » Le README ajoute : « If you are not already using ingress-nginx, you should not be deploying it as it is not being developed. » Le dépôt a été archivé (lecture seule) le 24 mars 2026. Ça confirme très concrètement le point soulevé en formation sur la bascule vers Traefik comme alternative open source principale."
+  ],
+  "points": [
+    "Traefik — l'alternative open source qui a le plus profité de ce vide, selon le constat fait en formation (pas un classement officiel, mais cohérent avec la retraite confirmée d'ingress-nginx ci-dessus).",
+    "Contour, Kong, HAProxy, F5 (Big IP) — autres controllers cités, avec des maturités et fonctionnalités variables ; F5 s'appuie sur un boîtier matériel externe au cluster (déjà vu dans la note « Service LoadBalancer »).",
+    "Istio à part — c'est avant tout une solution de service mesh (déjà vu : injection de sidecar Envoy via mutating webhook). Un admin qui installe Istio ne le fait généralement pas juste pour de l'Ingress simple, mais pour ce qu'il ajoute en plus (chiffrement mTLS interne au cluster, observabilité fine du trafic est-ouest).",
+    "Comment choisir (retour de formation, pas une checklist officielle) — le protocole nécessaire, le niveau de contrôle voulu sur le trafic, les besoins d'observabilité, et si des intégrations custom sont nécessaires ou si le controller les couvre nativement."
+  ],
+  "note": [
+    "Pattern avancé cité en formation, utile en upgrade majeur : un load balancer EN AMONT de plusieurs Ingress controllers/clusters, avec une IP unique et stable côté DNS. En cas de breaking change lourd sur une version Kubernetes, on construit un NOUVEAU cluster, on y migre les applis, on bascule le pool du load balancer vers ce nouveau cluster (sans changer le DNS), puis on détruit l'ancien — jugé plus sûr qu'un upgrade in-place. S'applique aussi bien on-prem que sur du cloud public."
+  ],
+  "refs": [
+    "https://github.com/kubernetes/ingress-nginx",
+    "https://kubernetes.io/docs/concepts/services-networking/ingress-controllers/"
+  ]
+},
+{
   "id": "f-j1-cilium-rancher-cni",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Fondamentaux",

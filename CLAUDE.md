@@ -91,7 +91,9 @@ Kubernetes), **www.cncf.io/projects** (pages officielles de statut de maturité 
 **clomonitor.io** (doc officielle de l'outil de notation de la santé des projets CNCF),
 **github.com/kubernetes/autoscaler** (dépôt officiel du Vertical/Horizontal Pod Autoscaler),
 **goldilocks.docs.fairwinds.com** (doc officielle de Goldilocks), **metallb.io** (doc officielle de
-MetalLB, implémentation de Service LoadBalancer pour clusters bare metal).
+MetalLB, implémentation de Service LoadBalancer pour clusters bare metal), **doc.traefik.io**
+(doc officielle de l'Ingress controller Traefik), **github.com/kubernetes/ingress-nginx** (dépôt
+officiel du projet ingress-nginx, y compris son annonce de retraite/fin de maintenance).
 Les mêmes principes de fidélité
 s'appliquent : ne rien inventer, chaque fiche porte ses `refs` vers la doc officielle du projet
 concerné.

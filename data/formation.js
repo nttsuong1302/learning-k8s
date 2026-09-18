@@ -954,6 +954,28 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-namespace-basics",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "Namespace : un dossier, mais qui ne peut PAS contenir d'autres dossiers",
+  "lead": "L'analogie du dossier fonctionne bien pour les fichiers qu'il contient — beaucoup moins pour l'idée de dossiers imbriqués.",
+  "body": [
+    "« Namespaces provide a mechanism for isolating groups of resources within a single cluster. Names of resources need to be unique within a namespace, but not across namespaces. » Effectivement, on y stocke Deployments, Pods, ConfigMaps, Secrets, Services, et plus généralement tout objet « namespaced »."
+  ],
+  "points": [
+    "Précision par rapport à une formulation entendue en formation (l'analogie du dossier qui contiendrait « d'autres dossiers ») : « Namespaces cannot be nested inside one another and each Kubernetes resource can only be in one namespace » — contrairement à un dossier de fichiers classique, PAS DE HIÉRARCHIE : un Namespace ne peut jamais contenir un autre Namespace. La structure est strictement plate (un seul niveau).",
+    "Tout n'est pas « rangeable » dans un namespace — certains objets sont cluster-scoped, donc EN DEHORS de tout namespace : « not for cluster-wide objects (e.g. StorageClass, Nodes, PersistentVolumes, etc.) ». Vérifiable avec `kubectl api-resources --namespaced=true` (namespaced) vs `--namespaced=false` (cluster-scoped).",
+    "Le vrai objectif, au-delà du rangement — « Namespaces are a way to divide cluster resources between multiple users » via les ResourceQuota : isolation logique ET levier de multi-tenancy, pas juste une histoire d'organisation visuelle."
+  ],
+  "note": [
+    "Nuance importante ajoutée en formation, cohérente avec la note « NetworkPolicy » : le namespace isole les NOMS et sert de périmètre pour le RBAC/ResourceQuota, mais n'isole PAS le réseau par défaut — « un Pod est non-isolé — toutes les connexions entrantes ET sortantes sont autorisées », donc un Pod d'un namespace peut parler librement à un Pod d'un autre namespace tant qu'aucune NetworkPolicy ne vient fermer ça. D'où le choix à faire, cité en formation, entre ségréguer des workloads par NAMESPACE (+ NetworkPolicy pour l'étanchéité réseau) ou par CLUSTER séparé (isolation totale, mais plus lourd à opérer)."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/",
+    "https://kubernetes.io/docs/concepts/services-networking/network-policies/"
+  ]
+},
+{
   "id": "f-j1-schema-infra",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Control plane & etcd",

@@ -1530,6 +1530,28 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-poddisruptionbudget",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Scheduler",
+  "title": "PodDisruptionBudget : protéger la dispo pendant les opérations volontaires",
+  "lead": "Anti-affinity et topologySpreadConstraints distribuent les Pods, mais ne protègent pas contre le fait qu'une opération de maintenance en vide plusieurs à la fois — c'est le rôle du PodDisruptionBudget.",
+  "body": [
+    "Distinction officielle disruption involontaire / volontaire. Involontaire (subie, ex. panne matérielle du nœud, VM supprimée par erreur, panne hyperviseur/cloud provider, kernel panic, nœud disparaissant du cluster suite à une partition réseau) vs volontaire (déclenchée par l'admin/le propriétaire de l'appli : suppression d'un déploiement, mise à jour du pod template, suppression directe d'un Pod, `drain` d'un nœud pour réparation/upgrade/scale down).",
+    "« A PDB limits the number of Pods of a replicated application that are down simultaneously from voluntary disruptions. » Exemple officiel : « a Deployment which has .spec.replicas: 5 is supposed to have 5 pods at any given time. If its PDB allows for there to be 4 at a time, then the Eviction API will allow voluntary disruption of one (but not two) pods at a time. »"
+  ],
+  "points": [
+    "`kubectl drain` respecte le PDB en passant par l'API d'éviction — « Cluster managers and hosting providers should use tools which respect PodDisruptionBudgets by calling the Eviction API instead of directly deleting pods. » « The eviction request... may be temporarily rejected, so the tool periodically retries all failed requests until all Pods on the target node are terminated. » Concrètement (exemple repris en formation) : un PDB `minAvailable: 1` sur les Pods `app=kube-dns` garantit qu'au moins une instance DNS reste up pendant qu'un `drain` vide les nœuds les uns après les autres.",
+    "Confirmation d'une affirmation entendue en formation (« si vous supprimez la ressource, ça ne va pas vous en empêcher ») : c'est exact et documenté — « Not all voluntary disruptions are constrained by Pod Disruption Budgets. For example, deleting deployments or pods bypasses Pod Disruption Budgets. » Seules les opérations qui passent par l'Eviction API (comme `kubectl drain`) sont bloquées par le PDB ; un `kubectl delete pod`/`delete deployment` direct l'ignore totalement.",
+    "Mitigation des disruptions INVOLONTAIRES (le PDB ne peut rien faire ici — il ne couvre que le volontaire) : « Ensure your pod requests the resources it needs. Replicate your application if you need higher availability. For even higher availability... spread applications across racks (using anti-affinity) or across zones » — exactement les 3 leviers cités en formation (ressources, réplication, répartition), voir notes « Requests & Limits » et « Pod affinity / anti-affinity »."
+  ],
+  "note": [
+    "Cohérence interne : si le déploiement entier est supprimé, le `labelSelector` du PDB ne matche plus aucun Pod — le PDB devient de facto sans effet, ce qui explique le \"retour en incident\" mentionné en formation dans ce cas."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/concepts/workloads/pods/disruptions/"
+  ]
+},
+{
   "id": "f-j1-secrets-base64",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Secrets & sécurité",

@@ -446,6 +446,75 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-gateway-api-successeur",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "Gateway API : le successeur (recommandé) de l'Ingress",
+  "lead": "L'Ingress n'est pas mort, mais son développement s'est arrêté — toutes les nouvelles fonctionnalités arrivent désormais côté Gateway API.",
+  "body": [
+    "Position officielle, sans ambiguïté : « The Kubernetes project recommends using Gateway instead of Ingress. The Ingress API has been frozen. » Frozen = « The Ingress API is generally available and subject to stability guarantees for generally available APIs. Kubernetes has no plans to remove Ingress » MAIS « The Ingress API is no longer being developed, with no further changes or updates planned » — donc l'objet reste utilisable et stable, il n'accueillera juste plus rien de neuf.",
+    "Modèle d'objets (voir aussi note « HTTPRoute en pratique ») : une `GatewayClass` (ressource cluster-scoped fournie par l'implémentation, ex. Traefik) est le lien vers le contrôleur ; une ou plusieurs `Gateway` s'y rattachent ; une ou plusieurs ressources `*Route` (`HTTPRoute`, `GRPCRoute`, `TLSRoute`, `TCPRoute`, `UDPRoute`) s'attachent ensuite à ces `Gateway` — « A Gateway object is associated with exactly one GatewayClass... One or more route kinds such as HTTPRoute, are then associated to Gateways »."
+  ],
+  "points": [
+    "Pourquoi migrer, concrètement (retour d'expérience formateur) : (1) un Ingress ne gère nativement QUE de la terminaison TLS/HTTP(S) — pas de gRPC, pas de TCP/UDP brut ; pour du gRPC il fallait contourner l'Ingress en exposant directement des Services. C'est un fait structurel confirmé côté doc : l'API `networking.k8s.io/v1` Ingress ne définit que des règles host/path HTTP(S), alors que Gateway API ajoute des kinds dédiés (`GRPCRoute`, `TCPRoute`, `UDPRoute`, `TLSRoute`) pour ces cas — voir point suivant sur leur statut GA. (2) Au quotidien, un Ingress avec beaucoup de règles pousse à empiler l'info dans des annotations (spécifiques à chaque provider/contrôleur, donc non portables) — un objet Kubernetes a une limite documentée : « the total size of all annotations (keys and values combined) must not exceed 256 KiB » — un Ingress avec beaucoup de règles/annotations peut donc être refusé par l'API server une fois cette limite atteinte (l'anecdote GKE du formateur est un cas vécu de cette limite générale, pas une restriction spécifique à GKE).",
+    "Précision par rapport à une formulation entendue en formation (« TCP, UDP et TLS restent encore en alpha ») : c'était vrai il y a peu, mais ce n'est plus le cas aujourd'hui — Gateway API a sa PROPRE numérotation de version, indépendante des numéros de version de Kubernetes (pas de lien avec « Kube 1.26 ») : `GatewayClass`/`Gateway`/`HTTPRoute` GA (Standard) depuis la v1.0 (31 oct. 2023), `GRPCRoute` GA depuis la v1.1 (mai 2024), `TLSRoute` GA depuis la v1.5, et `TCPRoute`/`UDPRoute` viennent tout juste de passer GA (Standard) avec la v1.6 (30 juin 2026) — les 6 types de routes sont donc désormais tous en canal Standard/GA.",
+    "Les 2 canaux de release du projet : « Standard Channel » (API graduées en Beta/GA — ce qu'on installe en prod) et « Experimental Channel » (tout ce qui est encore en Alpha + les nouveaux champs pas encore graduated)."
+  ],
+  "note": [
+    "Le scepticisme du formateur sur le « forever » du freeze (« on a déjà vu des objets en GA dépréciés puis supprimés ») est un retour d'expérience personnel, pas une position officielle — la doc Kubernetes est explicite : aucun projet de suppression de l'Ingress."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/concepts/services-networking/ingress/",
+    "https://kubernetes.io/docs/concepts/services-networking/gateway/",
+    "https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/",
+    "https://kubernetes.io/blog/2023/10/31/gateway-api-ga/",
+    "https://kubernetes.io/blog/2026/08/03/gateway-api-v1-6-release/",
+    "https://gateway-api.sigs.k8s.io/docs/concepts/versioning/",
+    "https://gateway-api.sigs.k8s.io/reference/api-types/tlsroute/"
+  ]
+},
+{
+  "id": "f-j1-gateway-listeners-class",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "Gateway : listeners, TLS et GatewayClass",
+  "lead": "Là où un Ingress mélange host, TLS et règles de routage dans UN seul objet, Gateway API éclate ça en plusieurs objets agrégés au runtime.",
+  "body": [
+    "« A Gateway is 1:1 with the lifecycle of the configuration of infrastructure. » Ses `listeners` — « Define the hostnames, ports, protocol, termination, TLS settings and which routes can be attached to a listener » — portent le port d'écoute (ex. 80 pour HTTP, 443 pour HTTPS) et, pour du HTTPS, une référence TLS vers un certificat.",
+    "Différence structurelle avec l'Ingress : dans un Ingress classique, host + TLS + règles de path vivent dans le MÊME objet. Avec Gateway API, le `Gateway` porte les listeners + le TLS, et les règles de routage vivent dans des objets séparés (`HTTPRoute`, `GRPCRoute`…) qui référencent le `Gateway` via `parentRefs` — le contrôleur les agrège au runtime."
+  ],
+  "points": [
+    "TLS : le listener référence un certificat via `certificateRefs`, qui pointe vers un `Secret` — soit dans le même namespace que la `Gateway`, soit dans un namespace dédié (ex. `cert-manager`) si le contrôleur/`ReferenceGrant` l'autorise. cert-manager (voir note « Terminaison TLS d'un Ingress ») fonctionne à l'identique avec Gateway API : il génère/renouvelle le certificat dans le `Secret`, que le listener référence.",
+    "`GatewayClass` — « a cluster-scoped resource defined by the infrastructure provider. This resource represents a class of Gateways that can be instantiated. » Le champ `spec.controller` (« The GatewayClass.spec.controller field determines the controller implementation responsible for managing the GatewayClass ») fait exactement le même rôle que le champ `spec.controller` d'une `IngressClass` : c'est le nom du contrôleur (ex. Traefik) qui doit gérer les `Gateway` de cette classe."
+  ],
+  "note": [
+    "À relier à « Ingress : resource + controller » : `GatewayClass` est donc l'équivalent direct d'`IngressClass`, juste appliqué au nouvel objet `Gateway`."
+  ],
+  "refs": [
+    "https://gateway-api.sigs.k8s.io/reference/api-types/gateway/",
+    "https://gateway-api.sigs.k8s.io/reference/api-types/gatewayclass/"
+  ]
+},
+{
+  "id": "f-j1-httproute-filters-redirect",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "HTTPRoute : matching par header vs filters (redirection HTTP → HTTPS)",
+  "lead": "Deux mécanismes différents à ne pas confondre sous l'étiquette commune « filtering » : matcher une requête (condition) et transformer une requête/réponse (action).",
+  "body": [
+    "Précision par rapport à une formulation entendue en formation (tout regroupé sous « HTTP filtering ») : matcher sur un header HTTP est une CONDITION — ça se fait dans `rules[].matches[].headers` (voir note « HTTPRoute en pratique » pour la sémantique AND/OR des `matches`), au même titre qu'un `path` ou un `queryParams`. Un `filter`, lui, est une ACTION appliquée à la requête ou à la réponse — c'est un champ séparé, `rules[].filters`."
+  ],
+  "points": [
+    "Exemple vérifié pour la redirection HTTP → HTTPS : « RequestRedirect rule filters instruct Gateways to emit a redirect response to requests matching a filtered HTTPRoute rule », avec `type: RequestRedirect` et `requestRedirect: { scheme: https, statusCode: 301 }` sur la règle."
+  ],
+  "note": [
+    "Autres types de `filters` existants côté spec (non détaillés en formation) : `RequestHeaderModifier` (ajout/suppression/réécriture de headers), `URLRewrite`, `RequestMirror`, `ExtensionRef` — un `filter` transforme, un `match` sélectionne."
+  ],
+  "refs": [
+    "https://gateway-api.sigs.k8s.io/guides/http-redirect-rewrite/"
+  ]
+},
+{
   "id": "f-j1-cilium-rancher-cni",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Fondamentaux",

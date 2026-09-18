@@ -1473,6 +1473,63 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-node-affinity",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Scheduler",
+  "title": "Node affinity : preferred vs required, et les opérateurs",
+  "lead": "Une préférence de nœud n'est pas un prérequis — sauf si on demande explicitement le mode strict, et alors le Pod reste Pending plutôt que d'être placé ailleurs.",
+  "body": [
+    "Les deux modes officiels : `requiredDuringSchedulingIgnoredDuringExecution` — « The scheduler can't schedule the Pod unless the rule is met. This functions like nodeSelector, but with a more expressive syntax » (si aucun nœud ne matche, le Pod reste `Pending`, il n'est PAS replacé ailleurs) — et `preferredDuringSchedulingIgnoredDuringExecution` — « The scheduler tries to find a node that meets the rule. If a matching node is not available, the scheduler still schedules the Pod » (c'est un souhait, pas un requirement). `IgnoredDuringExecution` dans les deux cas : « if the node labels change after Kubernetes schedules the Pod, the Pod continues to run » — l'affinité n'est vérifiée qu'AU moment du scheduling, jamais réévaluée après coup."
+  ],
+  "points": [
+    "Se définit dans `spec.affinity.nodeAffinity`, via un `matchExpressions` qui matche un label de nœud (pas une annotation).",
+    "Opérateurs disponibles (liste officielle complète) : `In`, `NotIn`, `Exists`, `DoesNotExist`, `Gt`, `Lt`."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/"
+  ]
+},
+{
+  "id": "f-j1-pod-affinity-antiaffinity",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Scheduler",
+  "title": "Pod affinity / anti-affinity : co-localiser ou séparer via topologyKey",
+  "lead": "Même logique preferred/required que node affinity, mais le critère matché n'est plus un label de NŒUD — c'est un label d'AUTRES PODS.",
+  "body": [
+    "« You can constrain a Pod using labels on other Pods running on the node (or other topological domain), instead of just node labels, which allows you to define rules for which Pods can be co-located on a node. » Deux règles symétriques : `podAffinity` (je veux tourner sur le même domaine topologique que tel ensemble de Pods) et `podAntiAffinity` (je NE veux PAS tourner sur le même domaine que tel ensemble de Pods) — chacune avec les mêmes variantes `required`/`preferred` que node affinity.",
+    "`topologyKey` — le label de NŒUD qui définit le périmètre du \"même endroit\" : ex. `kubernetes.io/hostname` (même nœud précisément) ou `topology.kubernetes.io/zone` (même zone, plusieurs nœuds). Nœuds portant la même valeur pour ce label = même domaine topologique ; le scheduler compare les Pods matchés par `labelSelector` à l'intérieur de ce domaine."
+  ],
+  "points": [
+    "Cas d'usage officiels — affinity : co-localiser deux services qui communiquent beaucoup pour réduire la latence. Anti-affinity : répartir les réplicas d'une appli sur différents nœuds/zones pour la haute disponibilité.",
+    "Retour d'expérience formateur (pas une doc officielle, mais cohérent avec le cas d'usage HA ci-dessus) : concentrer tous les Pods d'une même base de données à fort IO sur un seul nœud peut faire compétition de ressources avec les autres Pods du même nœud — les séparer via `podAntiAffinity` limite ce risque en plus d'apporter de la résilience."
+  ],
+  "note": [
+    "À relier à la note suivante « topologySpreadConstraints » : pod affinity/anti-affinity contrôle un PLACEMENT relatif (avec/sans tel autre Pod), mais ne garantit PAS une distribution équilibrée entre domaines — pour ça, il faut `topologySpreadConstraints`."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/"
+  ]
+},
+{
+  "id": "f-j1-topology-spread-constraints",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Scheduler",
+  "title": "topologySpreadConstraints : distribuer les Pods entre zones (maxSkew)",
+  "lead": "Le mécanisme dédié pour garantir une distribution équilibrée entre domaines topologiques (nœuds, zones, régions) — ce que l'anti-affinity seule ne garantit pas.",
+  "body": [
+    "`topologyKey` — « the key of node labels. Nodes that have a label with this key and identical values are considered to be in the same topology. We call each instance of a topology (in other words, a <key, value> pair) a domain. The scheduler will try to put a balanced number of pods into each domain. » Les labels bien connus `topology.kubernetes.io/zone` et `topology.kubernetes.io/region` sont typiquement fournis nativement par les cloud providers (à définir soi-même si le cluster est self-managed).",
+    "`maxSkew` — « describes the degree to which Pods may be unevenly distributed » : avec `whenUnsatisfiable: DoNotSchedule` (valeur par défaut), c'est « the maximum permitted difference between the number of matching pods in the target topology and the global minimum » (ex. 3 zones à 2/2/1 Pods matchés → minimum global = 1, skew de la zone à 2 = 1)."
+  ],
+  "points": [
+    "`whenUnsatisfiable` — `DoNotSchedule` (défaut) : « tells the scheduler not to schedule it » (le Pod reste `Pending` si la contrainte n'est pas respectable) ; `ScheduleAnyway` : « tells the scheduler to still schedule it while prioritizing nodes that minimize the skew » (best-effort).",
+    "`labelSelector` — « used to find matching Pods. Pods that match this label selector are counted to determine the number of Pods in their corresponding topology domain » : sans lui, AUCUN Pod n'est compté et la contrainte ne fait rien.",
+    "Exemple repris en formation : Pods `app=myapp`, `topologyKey: topology.kubernetes.io/zone`, `maxSkew: 1`, `whenUnsatisfiable: DoNotSchedule` — avec 3 zones disponibles, le scheduler pose au plus 1 Pod de plus dans une zone que dans la zone la moins peuplée ; une fois cet écart atteint partout, tout Pod supplémentaire reste `Pending` tant qu'aucune zone ne peut l'absorber sans dépasser `maxSkew`."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/"
+  ]
+},
+{
   "id": "f-j1-secrets-base64",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Secrets & sécurité",

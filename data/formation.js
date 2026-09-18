@@ -1374,6 +1374,59 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-kops-kubespray-upgrade",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Control plane & etcd",
+  "title": "Upgrade avec kOps et Kubespray : même logique, deux outillages",
+  "lead": "Deux outils déjà vus pour le provisioning (voir note « Kubespray ») qui gèrent aussi le cycle de vie complet — jusqu'à l'upgrade.",
+  "body": [
+    "kOps — workflow en 3 étapes : `kops edit cluster $NAME` (modifier `kubernetesVersion` vers la cible), `kops update cluster $NAME --yes` (appliquer la config), puis `kops rolling-update cluster $NAME --yes` (remplacer les nœuds un par un). Depuis kOps 1.31, un `kops reconcile cluster $NAME --yes` unique peut consolider ces étapes après avoir édité la version cible.",
+    "Kubespray — un playbook Ansible dédié (`upgrade-cluster.yml`) qui upgrade tout, DANS CET ORDRE documenté : « Docker, Containerd, etcd, kubelet and kube-proxy, network_plugin (such as Calico), kube-apiserver, kube-scheduler, and kube-controller-manager, Add-ons (such as KubeDNS) » — confirme précisément la liste citée en formation (runtime, etcd, kubelet/kube-proxy, CNI, PUIS le control plane, plus les add-ons)."
+  ],
+  "points": [
+    "Point commun aux deux : contrairement à un cluster managé (GKE/EKS/AKS), c'est TOI qui déclenches et pilotes chaque étape — aucune automatisation cachée côté fournisseur."
+  ],
+  "refs": [
+    "https://kops.sigs.k8s.io/operations/updates_and_upgrades/",
+    "https://github.com/kubernetes-sigs/kubespray/blob/master/docs/operations/upgrades.md"
+  ]
+},
+{
+  "id": "f-j1-gke-upgrade-modes",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Control plane & etcd",
+  "title": "GKE : upgrade classique vs le tour de passe-passe de l'Autopilot",
+  "lead": "En mode Autopilot, un cluster vidé de ses workloads peut littéralement se mettre à jour tout seul, sans qu'aucun dev ne s'en aperçoive.",
+  "body": [
+    "GKE mode Standard — upgrade du control plane d'abord (indisponibilité de l'API pendant l'opération, quelques minutes), puis drain + upgrade des nœuds un par un — le même schéma que kubeadm/kOps/Kubespray, mais piloté par Google.",
+    "GKE Autopilot — facturé uniquement au CPU/RAM réellement consommé par les Pods, PAS par nœud provisionné : « If a cluster has no running workloads, Autopilot can automatically scale the cluster down to zero nodes » et à l'inverse, dès qu'un Pod apparaît sans nœud disponible, GKE en provisionne un à la volée."
+  ],
+  "points": [
+    "Conséquence directe (le tour de passe-passe) : « all Autopilot clusters are enrolled in a GKE release channel so that your control plane and nodes run on the latest qualified versions » et « GKE automatically starts upgrades, monitors progress, and pauses the operation if problems occur » — upgrade totalement automatique et managé par GKE, sans commande à lancer.",
+    "Anecdote de terrain (retour d'expérience formateur, cohérente avec les 2 faits officiels ci-dessus) : sur un environnement de dev avec auto-shutdown 18h-8h, laisser le cluster Autopilot se vider complètement à 18h avant l'upgrade fait qu'il n'y a plus AUCUN nœud à faire du rolling update — quand les workloads reviennent le lendemain, tous les nœuds sont recréés directement dans la nouvelle version, comme un cluster neuf. Aucune interruption visible côté devs."
+  ],
+  "refs": [
+    "https://docs.cloud.google.com/kubernetes-engine/docs/concepts/autopilot-overview"
+  ]
+},
+{
+  "id": "f-j1-eksctl-upgrade",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Control plane & etcd",
+  "title": "EKS : eksctl upgrade cluster, une version mineure à la fois",
+  "lead": "Même schéma que les autres cloud providers, avec un CLI dédié — et une limite stricte qui empêche de sauter plusieurs versions d'un coup.",
+  "body": [
+    "« An eksctl-managed cluster can be upgraded in 3 easy steps: 1. upgrade control plane version with eksctl upgrade cluster ; 2. upgrade nodegroups ; 3. update the default networking add-ons. » Même ordre que partout ailleurs : control plane, puis nœuds, puis add-ons."
+  ],
+  "points": [
+    "Précision par rapport à une formulation entendue en formation (« mode auto-approved ») : ce n'est pas un mode à part, c'est un flag explicite — « This command will not apply any changes right away, you will need to re-run it with --approve to apply the changes » (`eksctl upgrade cluster --name=X --approve`). Sans ce flag, la commande fait un DRY-RUN et n'applique rien.",
+    "Limite stricte — « The only values allowed for the --version argument are the current version of the cluster or one version higher. Upgrades of more than one Kubernetes version are not supported » : toujours une version mineure à la fois, jamais de saut."
+  ],
+  "refs": [
+    "https://docs.aws.amazon.com/eks/latest/eksctl/cluster-upgrade.html"
+  ]
+},
+{
   "id": "f-j1-scheduler-filter-score",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Scheduler",

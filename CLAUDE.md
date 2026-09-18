@@ -96,7 +96,11 @@ MetalLB, implémentation de Service LoadBalancer pour clusters bare metal), **do
 officiel du projet ingress-nginx, y compris son annonce de retraite/fin de maintenance),
 **cert-manager.io** (doc officielle de cert-manager, gestion de certificats TLS pour Kubernetes),
 **developer.hashicorp.com/consul** (doc officielle de Consul/Consul Connect, service mesh HashiCorp
-cité en exemple), **kuma.io** (doc officielle de Kuma, service mesh créé par Kong, projet CNCF Sandbox).
+cité en exemple), **kuma.io** (doc officielle de Kuma, service mesh créé par Kong, projet CNCF Sandbox),
+**kops.sigs.k8s.io** (doc officielle de kOps, outil de provisioning/upgrade de clusters Kubernetes,
+projet kubernetes-sigs), **docs.cloud.google.com/kubernetes-engine** (doc officielle de GKE, dont le
+mode Autopilot cité en formation), **docs.aws.amazon.com/eks** et **eksctl.io** (doc officielle d'EKS
+et de son CLI eksctl, cités en exemple d'upgrade cluster chez un cloud provider).
 Les mêmes principes de fidélité
 s'appliquent : ne rien inventer, chaque fiche porte ses `refs` vers la doc officielle du projet
 concerné.

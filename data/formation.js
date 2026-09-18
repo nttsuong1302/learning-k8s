@@ -273,13 +273,17 @@ window.CKA.formation = window.CKA.formation || [];
     "Une fois qu'un Pod est sélectionné par une NetworkPolicy — « A pod is isolated for ingress if there is any NetworkPolicy that both selects the pod and has \"Ingress\" in its policyTypes. » Seules les connexions explicitement autorisées par la liste `ingress` (+ le trafic venant du nœud du Pod) passent ensuite. Même logique côté `egress`.",
     "C'est du deny-by-default localisé — dès qu'une policy sélectionne le Pod, pas globalement pour tout le cluster.",
     "Prérequis crucial (relié à la note « Solution réseau (CNI) ») : « Network policies are implemented by the network plugin. To use network policies, you must be using a networking solution which supports NetworkPolicy. Creating a NetworkPolicy resource without a controller that implements it will have no effect. » — Kubernetes stocke juste l'objet, c'est le CNI qui doit l'appliquer réellement (Calico, Cilium le font).",
-    "Structure de base — `podSelector` (quels Pods la policy cible), `policyTypes` (Ingress et/ou Egress), `ingress`/`egress` (listes de règles `from`/`to` + `ports`)."
+    "Structure de base — `podSelector` (quels Pods la policy cible), `policyTypes` (Ingress et/ou Egress), `ingress`/`egress` (listes de règles `from`/`to` + `ports`).",
+    "Précision par rapport à une formulation entendue en formation (« Calico, Canal et Cilium supportent les NetworkPolicy, Flannel non ») : confirmé, et voici POURQUOI Canal fonctionne quand même — « While the flanneld binary does not natively enforce Network Policies, the Flannel project provides ways to add policy support to your cluster » (via le contrôleur NetworkPolicy de kubernetes-sigs, ou en le combinant avec un autre CNI). Canal, justement, est la combinaison historique Flannel (réseau) + moteur de policy de Calico — Flannel seul n'a jamais eu de NetworkPolicy nativement.",
+    "Exemple officiel exact pour interdire les communications extra-namespace tout en autorisant celles du même namespace (repris en formation) : `podSelector: {}` (tous les Pods du namespace) + `policyTypes: [Ingress]` + `ingress: [{ from: [{ podSelector: {} }] }]` — un `podSelector` vide SANS `namespaceSelector` restreint implicitement aux Pods du MÊME namespace que la policy."
   ],
   "note": [
-    "À relier à « Native routing vs overlay » et « Cilium » : le choix du CNI n'affecte pas que le routage, il détermine aussi si NetworkPolicy fonctionne du tout — et jusqu'à quel niveau (Cilium va jusqu'au L7, au-delà du simple L3/L4 de la spec NetworkPolicy standard)."
+    "À relier à « Native routing vs overlay » et « Cilium » : le choix du CNI n'affecte pas que le routage, il détermine aussi si NetworkPolicy fonctionne du tout — et jusqu'à quel niveau (Cilium va jusqu'au L7, au-delà du simple L3/L4 de la spec NetworkPolicy standard).",
+    "Enjeu sécurité au-delà du simple flux applicatif (souligné en formation) : sans NetworkPolicy, un seul Pod compromis donne à un attaquant un accès réseau à TOUS les autres Pods du cluster — le tout-ouvert par défaut n'est pas qu'une question de connectivité applicative, c'est une surface de mouvement latéral."
   ],
   "refs": [
-    "https://kubernetes.io/docs/concepts/services-networking/network-policies/"
+    "https://kubernetes.io/docs/concepts/services-networking/network-policies/",
+    "https://github.com/flannel-io/flannel"
   ]
 },
 {
@@ -965,7 +969,8 @@ window.CKA.formation = window.CKA.formation || [];
   "points": [
     "Précision par rapport à une formulation entendue en formation (l'analogie du dossier qui contiendrait « d'autres dossiers ») : « Namespaces cannot be nested inside one another and each Kubernetes resource can only be in one namespace » — contrairement à un dossier de fichiers classique, PAS DE HIÉRARCHIE : un Namespace ne peut jamais contenir un autre Namespace. La structure est strictement plate (un seul niveau).",
     "Tout n'est pas « rangeable » dans un namespace — certains objets sont cluster-scoped, donc EN DEHORS de tout namespace : « not for cluster-wide objects (e.g. StorageClass, Nodes, PersistentVolumes, etc.) ». Vérifiable avec `kubectl api-resources --namespaced=true` (namespaced) vs `--namespaced=false` (cluster-scoped).",
-    "Le vrai objectif, au-delà du rangement — « Namespaces are a way to divide cluster resources between multiple users » via les ResourceQuota : isolation logique ET levier de multi-tenancy, pas juste une histoire d'organisation visuelle."
+    "Le vrai objectif, au-delà du rangement — « Namespaces are a way to divide cluster resources between multiple users » via les ResourceQuota : isolation logique ET levier de multi-tenancy, pas juste une histoire d'organisation visuelle.",
+    "Critère de découpage cité en formation (retour d'expérience, pas une règle officielle) : namespace vs cluster séparé se décide sur la base des CONTRAINTES partagées, pas juste de la logique métier. Prod et hors-prod ont des contraintes de sécurité/disponibilité différentes → clusters séparés. À l'inverse, dev/staging/QA/recette partagent généralement les MÊMES contraintes → simples namespaces dans un même cluster hors-prod suffisent. Un cluster séparé se justifie surtout quand on a besoin de tester un changement d'INFRASTRUCTURE (upgrade, CNI…) sur une typologie différente sans risquer le reste."
   ],
   "note": [
     "Nuance importante ajoutée en formation, cohérente avec la note « NetworkPolicy » : le namespace isole les NOMS et sert de périmètre pour le RBAC/ResourceQuota, mais n'isole PAS le réseau par défaut — « un Pod est non-isolé — toutes les connexions entrantes ET sortantes sont autorisées », donc un Pod d'un namespace peut parler librement à un Pod d'un autre namespace tant qu'aucune NetworkPolicy ne vient fermer ça. D'où le choix à faire, cité en formation, entre ségréguer des workloads par NAMESPACE (+ NetworkPolicy pour l'étanchéité réseau) ou par CLUSTER séparé (isolation totale, mais plus lourd à opérer)."

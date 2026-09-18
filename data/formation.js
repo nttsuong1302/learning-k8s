@@ -1336,6 +1336,44 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-kubeadm-upgrade-procedure",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Control plane & etcd",
+  "title": "kubeadm upgrade en pratique : plan, apply, puis nœud par nœud",
+  "lead": "kubeadm automatise beaucoup — mais pas tout : il gère CoreDNS et kube-proxy, pas ton CNI tiers.",
+  "body": [
+    "`kubeadm upgrade plan [version]` — vérifie la faisabilité et affiche ce qui va changer, SANS rien modifier (nécessite `admin.conf`, donc à lancer sur un nœud control plane). `kubeadm upgrade apply [version]` exécute ensuite l'upgrade en plusieurs phases documentées, dans l'ordre : `preflight` → `control-plane` → `upload-config` → `kubelet-config` → `bootstrap-token` → `addon` (CoreDNS + kube-proxy) → `post-upgrade`.",
+    "Concrètement sur le control plane (« ~95% des implémentations » citées en formation, et c'est bien le cas avec kubeadm) : « Because the kube-apiserver static pod is running at all times […], when you perform a kubeadm upgrade which includes an etcd upgrade, in-flight requests to the server will stall while the new etcd static pod is restarting » — les composants sont des static Pods, redémarrés en place par le kubelet, avec migration de l'état etcd au passage."
+  ],
+  "points": [
+    "Précision par rapport à une formulation entendue en formation (« kubeadm met aussi à jour le CNI en suivant des tables de compatibilité ») : c'est inexact — la phase `addon` de `kubeadm upgrade apply` gère explicitement CoreDNS et kube-proxy, mais PAS le plugin CNI (Calico/Cilium/Flannel…), qui reste entièrement à la charge de l'admin, en suivant la matrice de compatibilité publiée par CHAQUE éditeur de CNI séparément.",
+    "Depuis 1.15, `kubeadm upgrade apply`/`kubeadm upgrade node` renouvellent automatiquement les certificats gérés par kubeadm (option `--certificate-renewal=false` pour désactiver).",
+    "Procédure par nœud, dans cet ordre : `kubectl cordon <node>` (empêche le scheduler d'y placer de nouveaux Pods, sans rien évincer) → `kubectl drain <node> --ignore-daemonsets --delete-emptydir-data` (`--ignore-daemonsets` car un DaemonSet reste voulu sur CE nœud par design, le drain ne peut pas l'évincer proprement ; `--delete-emptydir-data` pour les Pods avec du stockage `emptyDir`) → `kubeadm upgrade node` → reload/restart du service kubelet → `kubectl uncordon <node>`.",
+    "kubeadm ne propose pas de chemin de DOWNGRADE — les commandes et la documentation ne couvrent que la montée de version ; une fois upgradé, revenir en arrière n'est pas un scénario supporté nativement."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-upgrade/",
+    "https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-upgrade/"
+  ]
+},
+{
+  "id": "f-j1-upgrade-interruption-risk",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Control plane & etcd",
+  "title": "Interrompre un upgrade en cours : pourquoi c'est presque toujours une mauvaise idée",
+  "lead": "Anecdote de terrain (pas une doc officielle) : un bouton \"Annuler\" dans une interface cloud, sur une opération qui n'a jamais été conçue pour être annulable.",
+  "body": [
+    "Retour d'expérience formateur, PAS une doc officielle : un client a déclenché l'upgrade managé d'un cluster Scaleway (des API dépréciées n'avaient pas été corrigées côté applicatif, donc le cluster n'était pas vraiment prêt), puis a cliqué sur le bouton \"annuler la mise à jour\" de l'interface EN COURS de rolling update des nœuds. Résultat : un cluster à moitié migré, une partie des composants fonctionnels, l'autre non — ~8h de remise en état, aggravées par un service de backup que le client avait lui-même désactivé."
+  ],
+  "points": [
+    "Le mécanisme qui explique pourquoi une annulation \"propre\" n'existe pas : `kubeadm upgrade apply` s'exécute en plusieurs PHASES SÉQUENTIELLES documentées (`preflight` → `control-plane` → `upload-config` → `kubelet-config` → `bootstrap-token` → `addon` → `post-upgrade`, voir note « kubeadm upgrade en pratique ») — ce n'est pas une transaction atomique. Interrompre le processus au milieu (un CTRL-C, ou un bouton \"annuler\" côté provider) laisse le cluster dans un état intermédiaire : certaines phases appliquées, d'autres non.",
+    "Leçon générale, au-delà de l'anecdote : ne jamais supposer qu'un bouton d'une interface de gestion sait annuler proprement une opération d'infrastructure sous-jacente — vérifier ce que fait RÉELLEMENT l'outil en dessous (ici, kubeadm) avant de faire confiance à l'UI."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-upgrade/"
+  ]
+},
+{
   "id": "f-j1-scheduler-filter-score",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Scheduler",

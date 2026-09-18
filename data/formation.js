@@ -423,6 +423,29 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-httproute-canary",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "HTTPRoute en pratique : deux règles sur le même path, départagées par un query parameter",
+  "lead": "TP : un `HTTPRoute` avec une règle par défaut vers `v1` et une règle plus spécifique (path + query param `TEST=v2`) vers `v2` — comment Gateway API choisit laquelle appliquer.",
+  "body": [
+    "Rappel de structure (voir note « Traefik en détail ») : un `HTTPRoute` porte une liste de `rules`, chaque `rule` porte une liste de `matches` et une liste de `backendRefs`. Sémantique officielle des `matches` : « Multiple match types are ANDed together, i.e. the match will evaluate to true only if all conditions are satisfied » (AND entre les critères d'UN même match — path, headers, queryParams…) et « Each match is independent, i.e. this rule will be matched if any one of the matches is satisfied » (OR entre plusieurs `matches` d'UNE même règle) (spec Gateway API)."
+  ],
+  "points": [
+    "TP concret : namespace `shopping`, deux couples Deployment+Service (`demo-gateway-v1` / `demo-gateway-v2`, mêmes probes `/.healthcheck` et `/.readicheck`), et un `HTTPRoute` à 2 règles — règle 1 : `path.type: PathPrefix`, `value: /` → Service `demo-gateway-v1` ; règle 2 : même `path.type: PathPrefix`/`value: /` MAIS avec en plus un `queryParams` nommé `TEST` valant `v2` → Service `demo-gateway-v2`.",
+    "Terminologie : le kind officiel s'écrit `HTTPRoute` (tout en majuscules sur HTTP), pas `HttpRoute`.",
+    "`HTTPQueryParamMatch` — champs `name` (nom du paramètre), `value` (valeur attendue), `type` (par défaut `Exact` : comparaison exacte, sensible à la casse ; alternative : `RegularExpression`).",
+    "Pourquoi ça fonctionne même si la règle 1 est déclarée EN PREMIER dans le YAML : Gateway API ne priorise PAS par ordre d'écriture des règles, mais par spécificité — « Proxy or Load Balancer routing configuration generated from HTTPRoutes MUST prioritize rules based on the following criteria, continuing on ties » : caractères d'un hostname non-wildcard, puis d'un hostname, puis d'un path, puis les header matches, puis les query parameter matches (spec Gateway API). Les deux règles du TP ont le même path — donc à égalité sur les 3 premiers critères — mais seule la règle 2 a un query parameter match : sur une requête `?TEST=v2`, c'est donc bien elle qui l'emporte, indépendamment de sa position dans la liste `rules`."
+  ],
+  "note": [
+    "Ce comportement de priorité par spécificité (et non par ordre) est ce qui rend ce pattern « route par défaut + route plus spécifique en query param » fiable pour un canary/A-B testing simple, sans avoir besoin d'un outil de traffic-splitting dédié."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/concepts/services-networking/gateway/",
+    "https://gateway-api.sigs.k8s.io/references/spec/"
+  ]
+},
+{
   "id": "f-j1-cilium-rancher-cni",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Fondamentaux",

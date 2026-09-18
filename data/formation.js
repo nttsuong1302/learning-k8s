@@ -1572,6 +1572,25 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-serviceaccount-vs-user",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Secrets & sécurité",
+  "title": "ServiceAccount vs utilisateur humain : pourquoi Kubernetes ne gère pas les deux pareil",
+  "lead": "Un Pod n'a aucune identité en dehors du cluster ; un humain, lui, a presque toujours déjà une identité gérée ailleurs (LDAP, OIDC…) — Kubernetes en tire une distinction structurelle.",
+  "body": [
+    "« Kubernetes does not have objects which represent normal user accounts. Normal users cannot be added to a cluster through an API call. » Kubernetes part du principe qu'un système d'identité INDÉPENDANT DU CLUSTER gère déjà les humains — « It is assumed that a cluster-independent service manages normal users in the following ways: an administrator distributing private keys; a user store like Keystone or Google Accounts; a file with a list of usernames and passwords. » Kubernetes ne réinvente donc pas la gestion d'utilisateurs : il fait confiance à un certificat signé par la CA du cluster (le nom d'utilisateur vient alors du `CN` du certificat, ex. `/CN=bob`) ou à un jeton OIDC, puis laisse RBAC décider des droits.",
+    "« In contrast, service accounts are users managed by the Kubernetes API. They are bound to specific namespaces, and created automatically by the API server or manually through API calls. Service accounts are tied to a set of credentials stored as Secrets, which are mounted into pods allowing in-cluster processes to talk to the Kubernetes API. » Un Pod naît et meurt avec le cluster : il lui fallait un mécanisme d'identité NATIF, automatisable, créé/détruit par l'API server lui-même — pas un système externe."
+  ],
+  "points": [
+    "Tableau de comparaison officiel : `ServiceAccount` — objet de l'API Kubernetes, prévu pour les workloads/l'automatisation. `User`/`group` — externe au cluster, prévu pour les personnes.",
+    "Dans les deux cas, l'identité authentifiée passe ensuite par le MÊME système d'autorisation : RBAC. La différence porte uniquement sur COMMENT l'identité est établie (authentification), pas sur comment les droits lui sont ensuite attribués."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/concepts/security/service-accounts/",
+    "https://kubernetes.io/docs/reference/access-authn-authz/authentication/"
+  ]
+},
+{
   "id": "f-j1-secrets-base64",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Secrets & sécurité",

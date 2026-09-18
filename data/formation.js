@@ -380,6 +380,49 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-traefik-detail",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "Traefik en détail : HTTPRoute vs IngressRoute, EntryPoints, Middleware",
+  "lead": "Traefik peut router avec un Ingress classique + annotations, ou avec ses propres objets pour aller plus loin — deux familles à ne pas confondre.",
+  "body": [
+    "Précision par rapport à une formulation entendue en formation (« HTTP routes... sont des objets définis dans Traffic ») : `HTTPRoute` n'est PAS un objet propre à Traefik — c'est une ressource de la Gateway API, un standard Kubernetes cross-vendor (supporté par plusieurs Ingress controllers, pas seulement Traefik). Traefik la supporte : « Traefik fully supports all HTTPRoute core and some extended features, like BackendTLSPolicy, GRPCRoute, and TLSRoute resources » (spec Gateway API v1.6.1). L'objet réellement PROPRE à Traefik, c'est `IngressRoute` (déjà vu dans la note « Ingress : resource + controller »)."
+  ],
+  "points": [
+    "EntryPoints — « Listening for Incoming Connections/Requests », le port (et optionnellement le nom d'hôte) sur lequel Traefik écoute. Un router référence un entrypoint par son nom (ex. `websecure` pour du HTTPS) : entrypoints = OÙ Traefik écoute, règles de routage = COMMENT la requête est traitée une fois reçue. Équivalent en Ingress classique : l'annotation `traefik.ingress.kubernetes.io/router.entrypoints`.",
+    "Middleware — « pieces of middleware are a means of tweaking the requests before they are sent to your backend servers (or before the answer is sent to the clients) ». Concrètement : auth (basic/digest), IP allowlisting, rate limiting, réécriture de path/headers, compression, retry, redirections — chaînables, applicables au niveau router ou service.",
+    "3 façons de router avec Traefik, du plus simple au plus poussé — Ingress classique + annotations (portable, mais limité aux fonctionnalités couvertes par les annotations) ; `HTTPRoute` (Gateway API, standard, portable vers d'autres controllers compatibles) ; `IngressRoute` (propre à Traefik, accès à l'intégralité de ses fonctionnalités natives, mais non portable)."
+  ],
+  "note": [
+    "À relier à « Ingress : resource + controller » : ces 3 approches ne sont pas exclusives — un même cluster Traefik peut faire cohabiter des Ingress classiques (legacy/simples) et des IngressRoute (besoins avancés)."
+  ],
+  "refs": [
+    "https://doc.traefik.io/traefik/reference/routing-configuration/kubernetes/gateway-api/",
+    "https://doc.traefik.io/traefik/reference/install-configuration/entrypoints/",
+    "https://doc.traefik.io/traefik/reference/routing-configuration/http/middlewares/overview/"
+  ]
+},
+{
+  "id": "f-j1-ingress-tls",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "Terminaison TLS d'un Ingress : cert-manager vs Cloudflare",
+  "lead": "Deux façons opposées de gérer le HTTPS d'une appli exposée : automatiser le cycle de vie des certificats DANS le cluster, ou ne jamais avoir à le faire en sortant la terminaison TLS du cluster.",
+  "body": [
+    "cert-manager — « creates TLS certificates for workloads in your Kubernetes or OpenShift cluster and renews the certificates before they expire. » Il s'intègre directement aux objets `Ingress` (tutoriel officiel dédié à la sécurisation d'ingress-nginx — voir note sur sa retraite), gère plusieurs autorités de certification (dont Let's Encrypt), et supporte les certificats wildcard via la validation ACME DNS01 (chez plusieurs fournisseurs DNS : Route53, Cloudflare, Google Cloud DNS…)."
+  ],
+  "points": [
+    "Ce que ça change pour l'Ingress controller — une fois cert-manager en place, l'Ingress controller gère lui-même tout le cycle de vie du certificat (émission, renouvellement automatique avant expiration), sans intervention manuelle.",
+    "Alternative citée en formation : terminer le TLS chez Cloudflare — un filtre HTTP est placé entre Cloudflare et l'Ingress du cluster ; toute la terminaison SSL se fait côté Cloudflare, le cluster n'a alors PLUS besoin de gérer de certificats du tout en interne."
+  ],
+  "note": [
+    "cert-manager n'est qu'une solution parmi d'autres pour ce besoin (texte du formateur) — le vrai choix structurant, c'est où le TLS se termine : dans le cluster (cert-manager + Let's Encrypt ou une autre CA) ou à l'extérieur, chez un edge/CDN comme Cloudflare."
+  ],
+  "refs": [
+    "https://cert-manager.io/docs/"
+  ]
+},
+{
   "id": "f-j1-cilium-rancher-cni",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Fondamentaux",

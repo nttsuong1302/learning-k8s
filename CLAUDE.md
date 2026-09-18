@@ -93,7 +93,8 @@ Kubernetes), **www.cncf.io/projects** (pages officielles de statut de maturité 
 **goldilocks.docs.fairwinds.com** (doc officielle de Goldilocks), **metallb.io** (doc officielle de
 MetalLB, implémentation de Service LoadBalancer pour clusters bare metal), **doc.traefik.io**
 (doc officielle de l'Ingress controller Traefik), **github.com/kubernetes/ingress-nginx** (dépôt
-officiel du projet ingress-nginx, y compris son annonce de retraite/fin de maintenance).
+officiel du projet ingress-nginx, y compris son annonce de retraite/fin de maintenance),
+**cert-manager.io** (doc officielle de cert-manager, gestion de certificats TLS pour Kubernetes).
 Les mêmes principes de fidélité
 s'appliquent : ne rien inventer, chaque fiche porte ses `refs` vers la doc officielle du projet
 concerné.

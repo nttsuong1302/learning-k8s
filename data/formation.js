@@ -1572,6 +1572,25 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-priority-class",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Scheduler",
+  "title": "PriorityClass : qui reste, qui s'en va",
+  "lead": "Priorité basse = premier évincé. Priorité haute = dernier évincé. La logique inverse de ce qu'on pourrait intuiter avec un chiffre \"petit\".",
+  "body": [
+    "Comment ça se met en place, en 2 temps : on crée d'abord un objet `PriorityClass` (avec sa `value` numérique), puis on référence son nom dans `spec.priorityClassName` du Pod (ou du template du Deployment). L'admission controller de priorité résout ce nom vers la valeur entière définie dans la `PriorityClass`.",
+    "« When Pods are considered for scheduling, the scheduler tries to find a node for the pending Pod. If a suitable node isn't found, the scheduler tries to preempt (evict) lower priority Pods to make room. » — en cas de pression sur les ressources, c'est bien le Pod de PLUS BASSE priorité qui est évincé en premier, jamais l'inverse : un Pod à `0` cède la place à un Pod à `10000`, jamais le contraire."
+  ],
+  "points": [
+    "Précision par rapport à une formulation entendue en formation (une PriorityClass \"cluster critical\" et une \"not critical\") : les 2 classes intégrées ne s'appellent PAS comme ça — ce sont `system-cluster-critical` (valeur 2000000000) et `system-node-critical` (valeur 2000001000, ENCORE PLUS prioritaire). Les deux sont réservées à des composants CRITIQUES (aucune des deux n'est \"non critique\") : « system-node-critical is the highest available priority, even higher than system-cluster-critical. » La distinction porte sur le PÉRIMÈTRE (composants critiques au niveau du cluster vs au niveau du nœud), pas sur un niveau de criticité vs un niveau de non-criticité.",
+    "La répartition concrète citée en formation (cluster-critical pour l'infra cluster/DNS, node-critical pour CNI/CSI/monitoring/kube-proxy) est un retour d'expérience de terrain, cohérent avec les exemples officiels d'add-ons critiques (metrics-server, DNS, UI) — mais la doc officielle ne publie pas cette répartition exacte par composant, donc à prendre comme repère pratique plutôt que comme règle documentée."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/",
+    "https://kubernetes.io/docs/tasks/administer-cluster/guaranteed-scheduling-critical-addon-pods/"
+  ]
+},
+{
   "id": "f-j1-serviceaccount-vs-user",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Secrets & sécurité",
@@ -1773,6 +1792,151 @@ window.CKA.formation = window.CKA.formation || [];
     "https://kubernetes-csi.github.io/docs/sidecar-containers.html",
     "https://kubernetes.io/docs/concepts/storage/volumes/",
     "https://raw.githubusercontent.com/container-storage-interface/spec/master/spec.md"
+  ]
+},
+{
+  "id": "f-t-node-tools",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Troubleshooting",
+  "title": "Troubleshooting au niveau du nœud : rester Linux basique",
+  "lead": "Un nœud Kubernetes reste avant tout une machine Linux — les mêmes réflexes systemd s'appliquent, plus crictl pour parler au runtime directement quand l'API server n'est plus joignable.",
+  "body": [
+    "kubelet, kube-proxy et le container runtime sont des services système classiques sur le nœud : `systemctl status <service>` pour leur état, `journalctl -u <service>` pour leurs logs — les mêmes commandes que sur n'importe quel Linux, rien de spécifique à Kubernetes à ce niveau.",
+    "`crictl` — « a command-line interface for CRI-compatible container runtimes. You can use it to inspect and debug container runtimes and applications on a Kubernetes node. » Son intérêt principal : donner un accès DIRECT au runtime, en contournant complètement l'API server — donc utilisable même quand `kubectl` ne répond plus."
+  ],
+  "points": [
+    "Commandes `crictl` de base — `crictl pods` (lister les pods vus par le runtime), `crictl ps` / `crictl ps -a` (conteneurs en cours / tous), `crictl images` (images présentes), `crictl logs <id>` (logs d'un conteneur), `crictl exec -i -t <id> <cmd>` (exécuter une commande dedans).",
+    "Les static Pods (kube-apiserver, kube-scheduler, kube-controller-manager, etcd sur les nœuds control-plane, souvent) sont gérés directement par le kubelet, indépendamment de l'API server (voir note « Backup/restore du cluster ») — donc inspectables via `crictl`/`journalctl` même si l'API server lui-même est down, puisque c'est justement l'un des composants qui peut être en cause."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/tasks/debug/debug-cluster/",
+    "https://kubernetes.io/docs/tasks/debug/debug-cluster/crictl/"
+  ]
+},
+{
+  "id": "f-t-apiserver-down",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Troubleshooting",
+  "title": "API server injoignable : symptôme, causes, remédiation",
+  "lead": "Le symptôme est immédiat et sans appel : plus aucune commande kubectl ne fonctionne, quel que soit l'objet demandé.",
+  "body": [
+    "Symptôme — une erreur de connexion sur n'importe quel `kubectl get` (pods, nodes, configmaps, secrets…), par exemple « Unable to connect to the server: dial tcp <ip>:8443: i/o timeout » (le message exact varie — refus de connexion ou timeout — mais la cause à chercher est la même).",
+    "Causes à vérifier dans l'ordre : le processus kube-apiserver tourne-t-il ? etcd est-il en bonne santé (l'apiserver dépend entièrement de lui) ? Y a-t-il un problème réseau/pare-feu/load-balancer entre vous et l'apiserver ?"
+  ],
+  "points": [
+    "Remédiation — vérifier la connectivité réseau (port, firewall), si un load-balancer est devant l'apiserver vérifier qu'il route bien vers des instances saines, consulter les logs de l'apiserver (souvent un static Pod, donc `crictl`/`journalctl` sur le nœud control-plane si l'API elle-même ne répond pas), puis l'état du cluster etcd.",
+    "Sur un Kubernetes managé (EKS/GKE/AKS…), cette couche est largement prise en charge par le fournisseur (voir note « Managed Kubernetes chez les cloud providers ») — en self-managed, c'est entièrement à la charge de l'admin."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/tasks/debug/debug-cluster/troubleshoot-kubectl/",
+    "https://kubernetes.io/docs/tasks/debug/debug-cluster/"
+  ]
+},
+{
+  "id": "f-t-scheduler-down",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Troubleshooting",
+  "title": "Pods Pending : pas toujours la faute du scheduler",
+  "lead": "Un Pod Pending est un symptôme, pas un diagnostic — il faut distinguer une contrainte de placement normale d'un kube-scheduler réellement en panne.",
+  "body": [
+    "Rappel officiel de la phase `Pending` : « The Pod has been accepted by the Kubernetes cluster, but one or more of the containers has not been set up and made ready to run. This includes time a Pod spends waiting to be scheduled. » Autrement dit, Pending couvre AUSSI le temps normal d'attente avant placement — ce n'est pas en soi une anomalie.",
+    "Premier réflexe : `kubectl describe pod` — « The kubectl describe output shows scheduler messages explaining why the pod cannot be scheduled » (ex. ressources insuffisantes sur les nœuds, contrainte d'affinité/anti-affinité ou de taint non satisfaite). Si le message d'événement `FailedScheduling` est présent et explicite, le scheduler FONCTIONNE — c'est juste qu'aucun nœud ne correspond à la demande."
+  ],
+  "points": [
+    "Ce n'est un vrai problème de kube-scheduler que si AUCUN événement de scheduling n'apparaît du tout (silence complet) — dans ce cas, direction ses logs (static Pod control-plane, mêmes outils que pour l'apiserver).",
+    "Réponses possibles selon le cas : ajuster les requests/limits ou les règles d'affinité/anti-affinité/taints-tolerations pour matcher une réalité de cluster existante (voir notes dédiées), ou redémarrer/diagnostiquer le kube-scheduler lui-même si c'est vraiment lui qui est HS."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/",
+    "https://kubernetes.io/docs/tasks/debug/debug-application/debug-pods/"
+  ]
+},
+{
+  "id": "f-t-controller-manager-down",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Troubleshooting",
+  "title": "ReplicaSet/Endpoints qui ne se créent plus : kube-controller-manager",
+  "lead": "Quand la réconciliation d'état s'arrête net (les Pods d'un ReplicaSet n'apparaissent plus, les Endpoints d'un Service restent vides), le suspect numéro un n'est ni l'apiserver ni le scheduler.",
+  "body": [
+    "kube-controller-manager « runs controllers to implement Kubernetes API behavior », où un controller est « a control loop that watches the shared state of the cluster through the apiserver and makes changes attempting to move the current state towards the desired state. » C'est LUI qui fait le lien entre « le ReplicaSet dit 3 replicas » et « il existe réellement 3 Pods »."
+  ],
+  "points": [
+    "Symptômes typiques d'un kube-controller-manager HS : un ReplicaSet dont le nombre de Pods réels ne rejoint jamais `spec.replicas`, ou un Service dont les EndpointSlices restent vides alors que des Pods matchent son sélecteur.",
+    "Diagnostic — vérifier l'état de l'objet concerné (`kubectl describe replicaset`/`describe service`) pour confirmer que RIEN ne bouge, puis consulter les logs de kube-controller-manager (static Pod control-plane, comme apiserver/scheduler)."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/concepts/overview/components/"
+  ]
+},
+{
+  "id": "f-t-node-notready",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Troubleshooting",
+  "title": "Nœud NotReady : VM down, kubelet down, ou coupé de l'apiserver",
+  "lead": "Trois causes à départager, dans cet ordre de vérification : la machine existe-t-elle encore, le kubelet tourne-t-il, et arrive-t-il à parler à l'apiserver ?",
+  "body": [
+    "Le kubelet envoie régulièrement un battement de cœur (heartbeat) à l'apiserver pour signaler l'état du nœud ; un nœud jugé en mauvaise santé est « ignored for any cluster activity until it becomes healthy » — c'est ce mécanisme qui bascule un nœud en `NotReady` dès que ces heartbeats s'arrêtent, quelle qu'en soit la cause."
+  ],
+  "points": [
+    "3 causes possibles, dans l'ordre à vérifier : (1) la VM/le bare metal est down — accès console (iDRAC/série/équivalent cloud) ou SSH impossible ; (2) le service kubelet est down sur une machine par ailleurs saine — `systemctl status kubelet` + `journalctl -u kubelet` ; (3) le kubelet tourne mais ne peut plus atteindre l'apiserver (coupure réseau) — vérifier la connectivité réseau entre le nœud et le control plane.",
+    "Méthode : se connecter à la machine (console à distance ou SSH), regarder l'état + les logs du service kubelet, puis tester la connectivité vers l'apiserver depuis ce nœud."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/concepts/architecture/nodes/"
+  ]
+},
+{
+  "id": "f-t-dns-troubleshooting",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Troubleshooting",
+  "title": "Résolution DNS cassée dans le cluster : où chercher",
+  "lead": "La résolution de noms internes au cluster dépend d'une chaîne à 3 maillons — Service DNS, Pods DNS, et règles réseau — n'importe lequel peut casser la chaîne.",
+  "body": [
+    "3 causes documentées à vérifier dans l'ordre : le Service `kube-dns` existe-t-il (`kubectl get svc --namespace=kube-system`, avec ses ports `53/UDP,53/TCP`) ? Les Pods CoreDNS sont-ils UP (`kubectl get pods --namespace=kube-system -l k8s-app=kube-dns`) ? Une NetworkPolicy filtre-t-elle le port 53 entre les Pods applicatifs et les Pods DNS ?"
+  ],
+  "points": [
+    "Méthode officielle pas à pas — vérifier `/etc/resolv.conf` dans un Pod applicatif (`search`/`nameserver` corrects ?), vérifier que les Pods `k8s-app=kube-dns` sont Running, lire leurs logs (`kubectl logs --namespace=kube-system -l k8s-app=kube-dns`), vérifier que le Service ET ses EndpointSlices existent bien (Service sans endpoints = DNS silencieusement cassé).",
+    "Debug plus poussé : activer le plugin `log` dans la ConfigMap `coredns` (`kubectl -n kube-system edit configmap coredns`) pour voir passer les requêtes DNS en temps réel."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/tasks/administer-cluster/dns-debugging-resolution/"
+  ]
+},
+{
+  "id": "f-t-ephemeral-containers",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Troubleshooting",
+  "title": "Ephemeral containers : déboguer un Pod sans le modifier",
+  "lead": "GA depuis Kubernetes v1.25 — exactement la date citée en formation. Le bon réflexe quand l'image du conteneur à déboguer n'a même pas de shell.",
+  "body": [
+    "« A special type of container that runs temporarily in an existing Pod to accomplish user-initiated actions such as troubleshooting. You use ephemeral containers to inspect services rather than to build applications. » Le cas d'usage principal : « Ephemeral containers are useful for interactive troubleshooting when kubectl exec is insufficient because a container has crashed or a container image doesn't include debugging utilities » — typiquement une image distroless, volontairement sans shell ni outils, pour réduire la surface d'attaque."
+  ],
+  "points": [
+    "Ce ne sont PAS des conteneurs normaux : « they lack guarantees for resources or execution, and they will never be automatically restarted, so they are not appropriate for building applications » — pas de `ports`, pas de `resources` (les allocations d'un Pod sont immuables), et impossible à modifier/retirer une fois ajoutés.",
+    "Usage concret : `kubectl debug` ajoute un ephemeral container (souvent une image outillée type `busybox`/`netshoot`) au Pod ciblé, qui partage ses namespaces (réseau, PID selon le cas) — on obtient un shell interactif à côté du conteneur à déboguer, sans toucher au Pod original ni le redémarrer."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/concepts/workloads/pods/ephemeral-containers/",
+    "https://kubernetes.io/docs/tasks/debug/debug-application/debug-running-pod/"
+  ]
+},
+{
+  "id": "f-t-pod-status-reasons",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Troubleshooting",
+  "title": "Glossaire des statuts de Pod qui plantent : lequel veut dire quoi",
+  "lead": "Chaque raison d'échec pointe vers une couche différente du système — les confondre fait perdre du temps en diagnostic.",
+  "body": [
+    "`Pending` — « Insufficient Resources: CPU or Memory exhausted in the cluster » (ou usage d'un `hostPort` qui limite les nœuds possibles) : le Pod attend qu'un nœud satisfasse sa demande. `kubectl describe` affiche le message du scheduler expliquant pourquoi (voir note « Pods Pending : pas toujours la faute du scheduler »).",
+    "`ImagePullBackOff` / `ErrImagePull` — le kubelet n'arrive pas à récupérer l'image : nom d'image incorrect, image jamais poussée sur le registre, ou registre privé sans les credentials qui vont bien. `CrashLoopBackOff` — le conteneur démarre puis plante en boucle (à investiguer via `kubectl logs`, y compris `--previous` pour voir les logs du crash précédent). `OOMKilled` — le conteneur a dépassé sa limite mémoire et a été tué par le kernel (cgroup OOM killer) ; voir note « Requests & Limits »."
+  ],
+  "points": [
+    "Pour une éviction déclenchée par le kubelet (pression sur le nœud, pas un crash applicatif) : `kubectl describe pod` affiche directement la raison, ex. `DiskPressure` — « Node running low on disk space » (voir note « MemoryPressure & DiskPressure »). Le Pod passe alors en phase `Failed`, pas `CrashLoopBackOff`.",
+    "Réflexe commun à tous ces cas : `kubectl describe pod` en premier (section Events = le pourquoi), `kubectl logs`/`kubectl logs --previous` ensuite pour ce qui s'est passé À L'INTÉRIEUR du conteneur."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/tasks/debug/debug-application/debug-pods/",
+    "https://kubernetes.io/docs/concepts/scheduling-eviction/node-pressure-eviction/"
   ]
 }
   ];

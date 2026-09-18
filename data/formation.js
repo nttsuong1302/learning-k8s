@@ -1896,6 +1896,28 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-admission-controllers-builtin",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Secrets & sécurité",
+  "title": "Admission controllers intégrés : forcer des comportements, quoi que dise le manifeste",
+  "lead": "Avant même d'arriver aux webhooks (voir note dédiée), l'API server embarque déjà des dizaines de plugins d'admission prêts à l'emploi.",
+  "body": [
+    "`AlwaysPullImages` — force le pull de l'image à CHAQUE création de Pod, quelle que soit la `imagePullPolicy` déclarée dans le manifeste. Concrètement : impossible pour un Pod d'utiliser une image déjà en cache localement si ce plugin est actif — le comportement est imposé au niveau du cluster, pas laissé au choix du dev.",
+    "`LimitRanger` — « enforces constraints on resource requests and limits for containers and pods in a namespace by inspecting the incoming request and verifying that it does not violate any constraints enumerated in the LimitRange object in the Namespace » : c'est ce plugin qui fait RESPECTER un objet `LimitRange` posé sur un namespace (CPU/RAM par défaut ou max, mais aussi le nombre d'objets créables dedans)."
+  ],
+  "points": [
+    "`NamespaceExists` — rejette la création d'une ressource visant un namespace qui n'existe pas. `NamespaceAutoProvision` — à l'inverse, crée automatiquement le namespace manquant plutôt que de rejeter. Les deux ne sont normalement PAS actifs en même temps (comportements opposés sur le même cas).",
+    "`ResourceQuota` — fait respecter les `ResourceQuota` définis sur un namespace (le pendant « namespace entier » de `LimitRanger`, qui lui s'applique par Pod/conteneur).",
+    "Configuration — `--enable-admission-plugins=NamespaceLifecycle,LimitRanger,...` / `--disable-admission-plugins=...` sur le kube-apiserver. Pour voir la liste (activés par défaut en 1.37) : `kube-apiserver -h | grep enable-admission-plugins` — confirmé : « CertificateApproval, CertificateSigning, […], LimitRanger, MutatingAdmissionWebhook, Namespace… »."
+  ],
+  "note": [
+    "À relier à « Admission webhooks » : les plugins intégrés (ce que couvre cette fiche) et les webhooks (mutating/validating, écrits par toi ou un tiers comme Istio/Vault/Kyverno) vivent dans la MÊME chaîne d'admission de l'API server — les webhooks ne sont qu'un mécanisme d'EXTENSION de cette même logique, pas un système séparé."
+  ],
+  "refs": [
+    "https://kubernetes.io/docs/reference/access-authn-authz/admission-controllers/"
+  ]
+},
+{
   "id": "f-j1-admission-webhooks",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Secrets & sécurité",

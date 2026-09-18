@@ -542,6 +542,48 @@ window.CKA.formation = window.CKA.formation || [];
   ]
 },
 {
+  "id": "f-j1-service-mesh-landscape",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "Service mesh : le paysage (Istio, Linkerd, Consul Connect, Cilium, Kuma)",
+  "lead": "Un control plane qui pousse de la configuration à des proxys (sidecars) pour chiffrer et observer le trafic est-ouest — sauf pour le seul acteur qui n'a pas besoin de sidecar du tout.",
+  "body": [
+    "Comment ça marche, en prenant Istio en exemple — un control plane (`istiod`) qui pousse de la config aux proxys de données : « Istiod converts high level routing rules that control traffic behavior into Envoy-specific configurations, and propagates them to the sidecars at runtime. » Le chiffrement mTLS entre services est géré par ce même control plane : « Istiod acts as a Certificate Authority (CA) and generates certificates to allow secure mTLS communication in the data plane. »",
+    "Cilium — SEUL acteur cité capable de faire du service mesh SANS sidecar, parce qu'il opère au niveau du kernel (eBPF, voir note dédiée) : « Cilium supports the transparent encryption of Cilium-managed host traffic and traffic between Cilium-managed endpoints using IPsec, WireGuard, or ztunnel » — chiffrement transparent, sans proxy à injecter dans chaque Pod."
+  ],
+  "points": [
+    "Les plus répandus — Istio et Linkerd (tous deux CNCF Graduated, voir note « CNCF : niveaux de maturité »).",
+    "Consul Connect — service mesh HashiCorp qui « deploy[s] Envoy sidecar proxies to control traffic between each service and the rest of the network », avec mTLS via une CA intégrée. La doc actuelle présente Kubernetes et Nomad comme deux runtimes équivalents (pas de lien de subordination affiché) — l'origine \"conçu d'abord pour Nomad\" évoquée en formation n'est donc pas confirmable sur la doc actuelle, à prendre comme un point d'histoire du produit plutôt qu'un fait vérifié aujourd'hui.",
+    "Kuma — « the universal Envoy service mesh for distributed service connectivity », « originally created by Kong, Inc. », statut CNCF Sandbox (moins mature que Istio/Linkerd/Cilium).",
+    "Tendance citée en formation : la majorité des stacks utilisent des projets poussés par la CNCF (Istio, Linkerd, Cilium) plutôt que les alternatives venues d'un autre écosystème (Consul/Nomad) ou moins matures (Kuma)."
+  ],
+  "refs": [
+    "https://istio.io/latest/docs/ops/deployment/architecture/",
+    "https://docs.cilium.io/en/stable/security/network/encryption/",
+    "https://developer.hashicorp.com/consul/docs/connect",
+    "https://kuma.io/"
+  ]
+},
+{
+  "id": "f-j1-service-mesh-tradeoffs",
+  "day": "Jour 1 — 16 sept. 2026",
+  "section": "Fondamentaux",
+  "title": "Service mesh : le prix à payer (et l'avis tranché du formateur)",
+  "lead": "Un sidecar dans chaque Pod, un tiers dans chaque communication — la question n'est pas \"est-ce cool\", c'est \"en ai-je vraiment besoin\".",
+  "body": [
+    "4 coûts concrets cités en formation : (1) complexité opérationnelle — maintenance additionnelle (upgrade d'Istio, des Envoys) ; (2) surcharge CPU/RAM par Pod à cause du sidecar, avec une légère latence additionnelle sur chaque requête — chiffré officiellement côté Istio : « a single sidecar proxy with 2 worker threads consumes about 0.20 vCPU and 60 MB of memory » (à 1000 req/s), et « this work does affect queue wait times for subsequent requests, which increases average and tail latencies » ; (3) troubleshooting plus dur — un tiers s'ajoute dans la communication, donc un problème peut venir de l'appli OU de la configuration du mesh, pas toujours évident à distinguer ; (4) courbe d'apprentissage — s'approprier un service mesh est un investissement souvent sous-estimé."
+  ],
+  "points": [
+    "Avis du formateur (retour d'expérience personnel, PAS une recommandation officielle Kubernetes/CNCF) : après ~10 ans de Kubernetes en production (agences, startups, PME), jamais eu besoin d'un service mesh en prod — quelques middlewares ont toujours suffi. Message central : ne pas complexifier une infra sans un besoin réel, même si la techno a l'air \"cool\"."
+  ],
+  "note": [
+    "À mettre en regard de la note « Service mesh : le paysage » — le control plane + les sidecars qui rendent le mesh puissant (mTLS, observabilité fine) sont exactement ce qui génère ces 4 coûts. Cilium (sans sidecar) réduit le coût CPU/RAM/latence, mais n'élimine ni la complexité opérationnelle ni la courbe d'apprentissage."
+  ],
+  "refs": [
+    "https://istio.io/latest/docs/ops/deployment/performance-and-scalability/"
+  ]
+},
+{
   "id": "f-j1-rke2-vs-rancher",
   "day": "Jour 1 — 16 sept. 2026",
   "section": "Fondamentaux",
